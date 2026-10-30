@@ -1,21 +1,26 @@
-# pi-drop-session
+# Pi Drop Session
 
-`/drop` starts a new Pi session, then moves the previous session file to trash. It registers no agent tools.
+手动执行 `/drop`：先打开新会话，再将旧会话文件送到废纸篓。不注册 agent 工具。
 
-## Install
+## 安装
 
-Install a trash CLI separately, then install the repository's Git package and select this extension in `pi config`:
+随[仓库 Git package](../../README.md#安装)安装，入口为 `packages/pi-drop-session/index.ts`。可用 `pi config` 单独停用；更新和卸载方式见仓库说明。
 
-```sh
-pi install git:github.com/JinJieBeWater/pi-stuff
-pi config
+## 使用
+
+先安装可信的回收站命令，默认使用 `PATH` 中的 `trash`。在 Pi 中输入：
+
+```text
+/drop
 ```
 
-The default executable is `trash`, found through `PATH`. The Git package contains all seven extensions; see the [repository README](../../README.md#安装) for single-entry filtering, updates and removal. It is not published to npm.
+扩展先检查程序是否可执行，再请求新建会话。缺少程序、取消或创建新会话失败时，不调用回收站命令；仅在内存中的会话不做处理。
 
-## Configure
+回收失败或超时时，不改用永久删除。旧文件仍在时，提示通过 `/resume` 恢复旧会话；若旧文件已经不存在，则报告已结束，但不声称文件一定进入了废纸篓。
 
-Optional file: `~/.pi/agent/pi-drop-session.json`. Pi's native `PI_CODING_AGENT_DIR` override changes this directory. Configuration is read when the extension loads; reload Pi extensions after editing it.
+## 配置
+
+可选文件：`~/.pi/agent/pi-drop-session.json`。设置 `PI_CODING_AGENT_DIR` 时改从该目录读取。配置在加载时读取，修改后 `/reload` 或重开。
 
 ```json
 {
@@ -25,25 +30,24 @@ Optional file: `~/.pi/agent/pi-drop-session.json`. Pi's native `PI_CODING_AGENT_
 }
 ```
 
-All fields are optional. `enabled` is a boolean and defaults to `true`. `command` is a nonempty array of strings: executable first, then any fixed arguments. The absolute session path is appended as one final argument. `timeoutMs` is an integer from 1 to 60000. UTF-8 BOM is accepted. Unknown fields, invalid values, malformed JSON and read errors are reported; a missing file uses the defaults above.
+| 字段        | 默认值      | 含义                                         |
+| ----------- | ----------- | -------------------------------------------- |
+| `enabled`   | `true`      | 是否注册 `/drop`                             |
+| `command`   | `["trash"]` | 非空字符串数组，首项为程序，后续项为固定参数 |
+| `timeoutMs` | `5000`      | 超时毫秒数，整数范围 `1..60000`              |
 
-For another trash program, use e.g. `"command": ["gio", "trash"]`, provided it accepts the session path as its final argument. Executable paths may contain spaces. Relative executable paths containing `/` resolve against the current session directory. Arguments are passed directly, without shell expansion, quoting rules or templates.
+所有字段均可省略。会话文件的绝对路径作为最后一个独立参数追加；例如 `"command": ["gio", "trash"]`，前提是该程序接受这种参数顺序。程序路径可以含空格，包含 `/` 的相对路径相对于当前会话目录解析。
 
-## Boundaries
+参数直接传给程序，不经过 shell，不做变量展开或命令模板替换。支持 UTF-8 BOM；未知字段、无效值、错误 JSON 和读取错误会报错，只有文件不存在时使用默认值。
 
-- The command must move files to trash. The extension cannot make an arbitrary configured program safe.
-- A filesystem-only executable check runs before changing sessions. A missing or nonexecutable command leaves the current session unchanged. Cancellation or failed session creation never runs the command.
-- An unset or empty `PATH` is rejected for bare executable names; configure an explicit executable path instead. Empty entries within a nonempty `PATH` explicitly include the current session directory in the search.
-- After replacement, the command runs asynchronously using the fresh Pi context. On failure or timeout there is no permanent-delete fallback. If the old file is already absent, dropping is treated as complete without claiming it reached trash. Otherwise the error suggests `/resume` to reopen the old session.
-- Timeout sends `SIGKILL` to the launched process. This does not undo filesystem changes or guarantee termination of its descendants.
-- In-memory sessions are left alone. Only the previous session file is passed to the command; linked resources and other sessions are untouched.
-- Executable lookup targets macOS/Linux. Windows is not supported or tested. The executable can still change between checking and launching it.
+## 边界
 
-## Test
+- 面向 macOS/Linux；不支持 Windows，也未验证该平台。
+- 配置的程序必须可信且确实执行回收操作。扩展不能让任意外部命令变得安全，也不保证其文件操作原子性。
+- 只把旧会话文件路径交给程序，不额外回收关联资源或其他会话。
+- 裸命令名要求 `PATH` 已设置且非空，否则应配置明确的程序路径。非空 `PATH` 内的空条目按其原有含义搜索当前目录；程序仍可能在检查和执行之间被替换。
+- 超时向启动的进程发送 `SIGKILL`，不撤销已经发生的文件操作，也不保证终止其所有后代进程。
 
-```sh
-bun test
-bun run check-types
-```
+## 开发
 
-Tests require Node.js on `PATH` for the signal-handling regression. They use isolated temporary session fixtures, command stubs and harmless child processes, not a real trash command or real session files.
+通用命令见[开发指南](../../docs/development.md#验证)。本包测试使用临时会话文件、命令替身和无害子进程，不执行真实 trash；信号处理回归需要 `PATH` 中有 Node.js。

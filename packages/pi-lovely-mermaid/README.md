@@ -1,17 +1,14 @@
 # Pi Lovely Mermaid
 
-用 `lovely-mermaid 0.3.3` 替换 Pi 聊天中的原生 Mermaid 渲染。普通 Mermaid 代码块会直接显示为终端字符图，支持 Pi 主题、作者定义的节点样式和终端超链接，不需要模型调用额外工具。
+用 `lovely-mermaid` 将 Pi 聊天中的 Mermaid 代码块显示为终端字符图，跟随 Pi 主题，保留作者定义的节点样式和终端支持的超链接。不需要模型调用额外工具。
 
-## 启用
+## 安装
 
-通过 Pi 原生 Git package 安装，在 `pi config` 中按需启用本扩展：
+随[仓库 Git package](../../README.md#安装)安装，入口为 `packages/pi-lovely-mermaid/index.ts`。可用 `pi config` 单独停用；更新和卸载方式见仓库说明。
 
-```sh
-pi install git:github.com/JinJieBeWater/pi-stuff
-pi config
-```
+## 配置
 
-整个 package 的更新、卸载和单入口过滤见[仓库说明](../../README.md#安装)。在 Pi 的个人设置中将原生渲染关闭：
+启用前，将下面字段合并到 Pi 的 `settings.json`，关闭原生 Mermaid 渲染：
 
 ```json
 {
@@ -22,6 +19,8 @@ pi config
 ```
 
 已有 Pi 会话执行 `/reload` 后生效。原生 transformer 先于扩展执行，因此项目设置也应保持 `markdown.mermaid` 为 `off`。该设置只控制原生渲染；扩展启用期间会持续渲染。
+
+## 使用
 
 直接发送包含 `flowchart TD` 等 Mermaid 代码块的消息即可。用户和助手消息都会渲染，思考块保持原样；窗口和主题变化时重新渲染。超链接只应用到节点文字，并以终端能力检测结果为准。
 
@@ -37,8 +36,10 @@ pi config
 
 恢复原生渲染：在 `pi config` 中停用本扩展，把 `markdown.mermaid` 改回 `streaming`，再执行 `/reload`。
 
-## 验证与来源
+## 开发
 
-在本 package 目录运行 `bun run test` 和 `bun run check-types`。测试通过扩展注册的公开 Markdown transformer 检查实际渲染结果；开发依赖由仓库根目录的 Bun workspace 安装提供。
+通用命令见[开发指南](../../docs/development.md#验证)。测试通过公开 Markdown transformer 和真实 Pi `Markdown` 检查渲染结果、流式回退、主题、宽度和控制字符处理，不请求模型。
+
+## 来源
 
 接入方式参考 [Pi PR #8158](https://github.com/earendil-works/pi/pull/8158)，Markdown 行编码沿用 Pi 的处理方式。渲染器来自 [lovely-mermaid](https://github.com/xl0/lovely-mermaid)，使用其已发布版本，不修改上游文件。许可证与署名见[第三方声明](third-party-notices.md)。
