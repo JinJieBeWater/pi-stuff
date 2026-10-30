@@ -50,7 +50,7 @@ function render(source: string, width = 120) {
   return new Markdown(source, 0, 0, getMarkdownTheme()).render(width).map(stripTerminalSequences);
 }
 
-test("40, 80 and 120 columns use borderless tables with only one header rule", () => {
+test("40, 80 and 120 columns use a heavy header rule and thin data rules without a frame", () => {
   const transform = setup();
   for (const width of [40, 80, 120]) {
     const output = transform(sample, { availableWidth: width });
@@ -58,7 +58,14 @@ test("40, 80 and 120 columns use borderless tables with only one header rule", (
     const lines = render(output, width);
     expect(lines.every((line) => visibleWidth(line) <= width)).toBe(true);
     expect(lines.join("\n")).not.toMatch(/[┌┐└┘├┤┬┴┼│]/);
-    expect(lines.filter((line) => /^[─ ]+$/.test(line) && line.includes("─"))).toHaveLength(1);
+    const rules = lines.filter((line) => /^[━─ ]+$/.test(line) && /[━─]/.test(line));
+    expect(rules).toHaveLength(2);
+    expect(rules[0].trimEnd()).toMatch(/^━+(?:  ━+)*$/);
+    expect(rules[1]).toBe(rules[0].replaceAll("━", "─"));
+    expect(rules[0].trimEnd().split("  ")).toHaveLength(3);
+    const content = lines.filter((line) => line.trim());
+    expect(content[0]).not.toMatch(/^[━─ ]+$/);
+    expect(content.at(-1)).not.toMatch(/^[━─ ]+$/);
   }
 });
 
@@ -90,6 +97,64 @@ test("small tables also lose the frame, rather than becoming cards", () => {
     expect(text).toContain("A  B");
     expect(text).toContain("x  y");
     expect(text).not.toContain("：");
+  }
+});
+
+test("Markdown alignment controls text and numbers without changing their values", () => {
+  const source = [
+    "| Left | Center | Right |",
+    "| :--- | :---: | ---: |",
+    "| x | y | 1 |",
+    "| wide | middle | 12345 |",
+    "| | | **+102%** |",
+  ].join("\n");
+  const lines = render(setup()(source, { availableWidth: 80 }), 80).map((line) => line.trimEnd());
+  expect(lines).toContain(["x   ", "  y   ", "    1"].join("  "));
+  expect(lines).toContain(["wide", "middle", "12345"].join("  "));
+  expect(lines).toContain(["    ", "      ", "+102%"].join("  "));
+});
+
+test.each([":---:", "---:"])("%s alignment preserves Unicode cell whitespace", (alignment) => {
+  const transform = setup();
+  for (const space of ["\u3000", "\u00a0"]) {
+    const source = `| H | B |\n| ${alignment} | --- |\n| \`x${space}\` | Y |`;
+    const lines = render(transform(source, { availableWidth: 80 }), 80);
+    const header = lines.find((line) => line.includes("H"))!;
+    const row = lines.find((line) => line.includes("x"))!;
+    expect(row).toContain(`x${space}`);
+    expect(visibleWidth(row.slice(0, row.indexOf("Y")))).toBe(
+      visibleWidth(header.slice(0, header.indexOf("B"))),
+    );
+  }
+});
+
+test.each(["dark", "light"])("aligned cells retain the next cell's %s theme color", (theme) => {
+  initTheme(theme, false);
+  const transform = setup();
+  for (const alignment of ["---:", ":---:"]) {
+    const source = `| Header | Next |\n| ${alignment} | --- |\n| x | Y |`;
+    const output = transform(source, { availableWidth: 80 });
+    const row = new Markdown(output, 0, 0, getMarkdownTheme())
+      .render(80)
+      .find((line) => stripTerminalSequences(line).includes("Y"))!;
+    const color = getMarkdownTheme().codeBlock("Y").split("Y")[0];
+    expect(row.slice(0, row.indexOf("Y")).endsWith(color)).toBe(true);
+  }
+});
+
+test.each(["dark", "light"])("aligned wrapping preserves wide text in %s theme", (theme) => {
+  initTheme(theme, false);
+  const letters = "abcdefghijklmnopqrstuvwxyz".repeat(2);
+  const source = `| 项目 | 内容 | 得分 |\n| :---: | ---: | ---: |\n| 👩‍💻🇨🇳 | **${letters}** | 7 |\n| 测试 | 说明 | 123 |`;
+  const transform = setup();
+  for (const width of [24, 40, 80]) {
+    const output = transform(source, { availableWidth: width });
+    expect(output).not.toBe(source);
+    const lines = render(output, width);
+    expect(lines.every((line) => visibleWidth(line) <= width)).toBe(true);
+    expect(lines.filter((line) => /^[━─ ]+$/.test(line) && /[━─]/.test(line))).toHaveLength(2);
+    for (const emoji of ["👩‍💻", "🇨🇳"]) expect(lines.join("\n")).toContain(emoji);
+    expect(lines.join("").match(/[a-z]/g)?.join("")).toBe(letters);
   }
 });
 
@@ -311,23 +376,38 @@ test("cell hyperlinks survive the borderless layout", () => {
   );
 });
 
-test("a cell's hyperlink does not leak into the next data row", () => {
-  setCapabilities({ ...getCapabilities(), hyperlinks: true });
-  const source = "| H |\n|---|\n| [x](https://example.com) |\n| y |";
-  const output = setup()(source, { availableWidth: 80 });
-  const lines = new Markdown(output, 0, 0, getMarkdownTheme()).render(80);
-  const x = lines.find((line) => stripTerminalSequences(line).trim() === "x")!;
-  const y = lines.find((line) => stripTerminalSequences(line).trim() === "y")!;
-  expect(getOsc8LinkAtColumn(x, 0)).toBe("https://example.com");
-  expect(getOsc8LinkAtColumn(y, 0)).toBeUndefined();
-});
+test.each(["---", "---:", ":---:"])(
+  "%s alignment keeps hyperlinks inside their cell",
+  (alignment) => {
+    setCapabilities({ ...getCapabilities(), hyperlinks: true });
+    const source = `| Header |\n|${alignment}|\n| [x](https://example.com) |\n| y |`;
+    const output = setup()(source, { availableWidth: 80 });
+    const lines = new Markdown(output, 0, 0, getMarkdownTheme()).render(80);
+    const x = lines.find((line) => stripTerminalSequences(line).trim() === "x")!;
+    const y = lines.find((line) => stripTerminalSequences(line).trim() === "y")!;
+    const column = stripTerminalSequences(x).indexOf("x");
+    expect(getOsc8LinkAtColumn(x, column)).toBe("https://example.com");
+    for (const line of lines.filter((line) => line !== x)) {
+      for (let i = 0; i < visibleWidth(line); i++)
+        expect(getOsc8LinkAtColumn(line, i)).toBeUndefined();
+    }
+    expect(y).toBeDefined();
+  },
+);
 
-test("the header's bold style does not leak into plain data", () => {
-  const output = setup()("| H |\n|---|\n| x |", { availableWidth: 80 });
-  const lines = new Markdown(output, 0, 0, getMarkdownTheme()).render(80);
-  const x = lines.find((line) => stripTerminalSequences(line).trim() === "x")!;
-  expect(x).not.toContain("\x1b[1m");
-});
+test.each(["---", "---:", ":---:"])(
+  "%s alignment keeps header bold out of plain data",
+  (alignment) => {
+    const output = setup()(`| Header |\n|${alignment}|\n| x |\n| **y** |`, { availableWidth: 80 });
+    const lines = new Markdown(output, 0, 0, getMarkdownTheme()).render(80);
+    const header = lines.find((line) => stripTerminalSequences(line).trim() === "Header")!;
+    const x = lines.find((line) => stripTerminalSequences(line).trim() === "x")!;
+    const y = lines.find((line) => stripTerminalSequences(line).trim() === "y")!;
+    expect(header).toContain(getMarkdownTheme().bold("Header"));
+    expect(x).not.toContain("\x1b[1m");
+    expect(y.includes("\x1b[1m")).toBe(getMarkdownTheme().bold("y").includes("\x1b[1m"));
+  },
+);
 
 test.each(["before", "after", "quoted"])(
   "reference definitions %s the table retain their native link meaning",

@@ -4,7 +4,9 @@ import {
   Marked,
   sliceByColumn,
   stripTerminalSequences,
+  truncateToWidth,
   type Tokens,
+  visibleWidth,
 } from "@earendil-works/pi-tui";
 
 const parser = new Marked();
@@ -58,18 +60,30 @@ function renderTable(table: Tokens.Table, width: number, definitions: string): s
     const plain = stripTerminalSequences(line).trimEnd();
     if (!plain || /^└─+(?:┴─+)*┘$/.test(plain)) continue;
     if (/^├─+(?:┼─+)*┤$/.test(plain)) {
-      if (!headerRule)
-        output.push(theme.codeBlockBorder(widths.map((width) => "─".repeat(width)).join("  ")));
+      const rule = headerRule ? "─" : "━";
+      output.push(theme.codeBlockBorder(widths.map((width) => rule.repeat(width)).join("  ")));
       headerRule = true;
       continue;
     }
     if (boundaries.some((column) => stripTerminalSequences(sliceByColumn(line, column, 1)) !== "│"))
       return table.raw;
     // Consume boundary-closing ANSI along with the native right padding, then drop that space.
-    const cells = widths.map((width, i) =>
-      sliceByColumn(line, boundaries[i] + 2, width + 1).replace(/ $/, ""),
-    );
-    output.push(theme.codeBlock(cells.join("  ")));
+    const cells = widths.map((width, i) => {
+      const cell = sliceByColumn(line, boundaries[i] + 2, width + 1).replace(/ $/, "");
+      const padding = Math.max(
+        0,
+        width - visibleWidth(stripTerminalSequences(cell).replace(/ +$/, "")),
+      );
+      const left =
+        table.align[i] === "right"
+          ? padding
+          : table.align[i] === "center"
+            ? Math.floor(padding / 2)
+            : 0;
+      // Pi 1.4 lays out all cells left-aligned; move only padding and keep ANSI/link closures.
+      return left ? " ".repeat(left) + truncateToWidth(cell, width - left, "") : cell;
+    });
+    output.push(cells.map((cell) => theme.codeBlock(cell)).join("  "));
   }
   if (!headerRule) return table.raw;
   return `\n\n${output.map(codeSpan).join("  \n")}\n\n`;
