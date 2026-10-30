@@ -1,0 +1,3 @@
+{
+  "extends": "@jinjiebewater-pi-stuff/config/tsconfig.base.json"
+}
