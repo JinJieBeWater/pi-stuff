@@ -87,6 +87,18 @@
         "@earendil-works/pi-tui": "*",
       },
     },
+    "packages/pi-tool-exposure": {
+      "name": "@jinjiebewater/pi-tool-exposure",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@earendil-works/pi-coding-agent": "1.4.0",
+        "@types/bun": "1.4.4",
+        "typescript": "7.0.2",
+      },
+      "peerDependencies": {
+        "@earendil-works/pi-coding-agent": "*",
+      },
+    },
   },
   "overrides": {
     "vite": "npm:@voidzero-dev/vite-plus-core@1.4.0",
@@ -165,6 +177,8 @@
     "@jinjiebewater/pi-herdr-session-move": ["@jinjiebewater/pi-herdr-session-move@workspace:packages/pi-herdr-session-move"],
 
     "@jinjiebewater/pi-lovely-mermaid": ["@jinjiebewater/pi-lovely-mermaid@workspace:packages/pi-lovely-mermaid"],
+
+    "@jinjiebewater/pi-tool-exposure": ["@jinjiebewater/pi-tool-exposure@workspace:packages/pi-tool-exposure"],
 
     "@jridgewell/resolve-uri": ["@jridgewell/resolve-uri@3.1.2", "", {}, "sha512-bRISgCIjP20/tbWSPWMEi54QVPRZExkuD9lJL+UIxUKtwVJA8wW1Trb1jMs1RFXo1CBTNZ/5hpC9QvmKWdopKw=="],
 

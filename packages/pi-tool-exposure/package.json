@@ -1,0 +1,24 @@
+{
+  "name": "@jinjiebewater/pi-tool-exposure",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Configuration-driven tool exposure through native Pi package discovery",
+  "type": "module",
+  "scripts": {
+    "test": "bun test",
+    "check-types": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "1.4.0",
+    "@types/bun": "1.4.4",
+    "typescript": "7.0.2"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}
