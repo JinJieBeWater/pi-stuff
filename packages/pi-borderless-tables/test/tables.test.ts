@@ -72,19 +72,53 @@ test("40, 80 and 120 columns use a heavy header rule and thin data rules without
 test.each(["user", "assistant-thinking"] as const)(
   "%s remains byte-for-byte unchanged",
   (messageType) => {
-    expect(setup()(sample, { messageType })).toBe(sample);
+    const transform = setup();
+    for (const isStreaming of [true, false])
+      expect(transform(sample, { messageType, isStreaming })).toBe(sample);
   },
 );
 
-test("streaming stays unchanged, completion and interrupted-stream updates can reflow", () => {
+test("streaming formats formed tables and preserves incomplete snapshots", () => {
   const transform = setup();
+  const firstRow = sample.split("\n").slice(0, 3).join("\n");
+  for (const source of [firstRow, sample, sample + "\n\nStill generating."])
+    expect(transform(source, { isStreaming: true })).not.toBe(source);
   for (let end = 0; end <= sample.length; end++) {
     const partial = sample.slice(0, end);
-    expect(transform(partial, { isStreaming: true })).toBe(partial);
+    expect(transform(partial, { isStreaming: true })).toBe(
+      transform(partial, { isStreaming: false }),
+    );
   }
-  expect(transform(sample, { isStreaming: false })).not.toBe(sample);
-  const partialRow = sample + "\n| unfinished |";
-  expect(transform(partialRow)).toBe(partialRow);
+  for (const source of [sample.split("\n").slice(0, 2).join("\n"), sample + "\n| unfinished |"])
+    expect(transform(source, { isStreaming: true })).toBe(source);
+});
+
+test("Pi Markdown updates table styling before streaming ends", () => {
+  const transform = setup();
+  let isStreaming = true;
+  const component = new Markdown("", 2, 0, getMarkdownTheme(), undefined, {
+    transform(source, availableWidth) {
+      return transform(source, { isStreaming, availableWidth });
+    },
+  });
+  let streamed: string[] = [];
+  for (const source of [
+    sample.split("\n").slice(0, 3).join("\n"),
+    sample,
+    sample + "\n\nStill generating.",
+  ]) {
+    component.setText(source);
+    streamed = component.render(84);
+    const plain = streamed.map(stripTerminalSequences).join("\n");
+    expect(plain).not.toMatch(/[┌┐└┘├┤┬┴┼│]/);
+    expect(plain).toContain("━");
+    expect(plain).toContain("Mermaid");
+    expect(streamed.every((line) => visibleWidth(line) <= 84)).toBe(true);
+  }
+  expect(streamed.map(stripTerminalSequences).join("\n")).toContain("Still generating.");
+  isStreaming = false;
+  component.invalidate();
+  expect(component.render(84)).toEqual(streamed);
 });
 
 test("small tables also lose the frame, rather than becoming cards", () => {

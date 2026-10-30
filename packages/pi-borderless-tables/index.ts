@@ -91,8 +91,7 @@ function renderTable(table: Tokens.Table, width: number, definitions: string): s
 
 export default function borderlessTables(pi: ExtensionAPI) {
   pi.registerMarkdownTransformer((markdown, context) => {
-    if (context.messageType !== "assistant" || context.isStreaming || !markdown.includes("|"))
-      return markdown;
+    if (context.messageType !== "assistant" || !markdown.includes("|")) return markdown;
     if (!Number.isSafeInteger(context.availableWidth) || context.availableWidth < 1)
       return markdown;
     const tokens = parser.lexer(markdown);

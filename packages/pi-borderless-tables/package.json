@@ -2,7 +2,7 @@
   "name": "@jinjiebewater/pi-borderless-tables",
   "version": "0.1.0",
   "private": true,
-  "description": "Borderless tables for completed Pi assistant replies",
+  "description": "Borderless tables for Pi assistant replies",
   "keywords": [
     "pi-package"
   ],
