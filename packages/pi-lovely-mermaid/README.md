@@ -18,7 +18,7 @@
 
 直接发送包含 `flowchart TD` 等 Mermaid 代码块的消息即可。用户和助手消息都会渲染，思考块保持原样；窗口和主题变化时重新渲染。超链接只应用到节点文字，并以终端能力检测结果为准。
 
-图形首次绘制就使用 Pi 当前主题，不等待 `session_start`，避免重载历史消息时继承行内代码的红色。文字和边框沿用 Markdown 代码块配色，连线使用主题强调色；作者定义的节点样式继续覆盖这些默认颜色。
+文字和边框跟随 Pi 当前主题的代码块配色，连线使用强调色；作者定义的节点样式优先。
 
 ## 边界
 
@@ -34,4 +34,4 @@
 
 在本 package 目录运行 `bun run test` 和 `bun run check-types`。测试通过扩展注册的公开 Markdown transformer 检查实际渲染结果；开发依赖由仓库根目录的 Bun workspace 安装提供。
 
-接入方式参考 [Pi PR #8158](https://github.com/earendil-works/pi/pull/8158)，Markdown 行编码沿用 Pi 的处理方式。渲染器来自 [lovely-mermaid](https://github.com/xl0/lovely-mermaid)，使用其已发布版本，不修改上游文件。
+接入方式参考 [Pi PR #8158](https://github.com/earendil-works/pi/pull/8158)，Markdown 行编码沿用 Pi 的处理方式。渲染器来自 [lovely-mermaid](https://github.com/xl0/lovely-mermaid)，使用其已发布版本，不修改上游文件。许可证与署名见[第三方声明](third-party-notices.md)。

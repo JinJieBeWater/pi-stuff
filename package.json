@@ -1,5 +1,5 @@
 {
-  "name": "jinjiebewater-pi-stuff",
+  "name": "pi-stuff",
   "private": true,
   "workspaces": [
     "packages/*"
@@ -15,7 +15,7 @@
     "hooks:setup": "vp config"
   },
   "devDependencies": {
-    "@jinjiebewater-pi-stuff/config": "workspace:*",
+    "@pi-stuff/config": "workspace:*",
     "@types/node": "^26.4.1",
     "rolldown": "1.2.15",
     "typescript": "7.0.2",

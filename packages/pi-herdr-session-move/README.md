@@ -28,8 +28,8 @@ pi install ./packages/pi-herdr-session-move
 - 每次创建不抢焦点的专用 workspace/pane，只处理当前 Pi；代码、Git 分支、worktree 和源目录保持原样。
 - 原 Pi 退出后保留空 shell。Herdr 0.9.5 的 pane close 无法按预期 occupant 原子关闭，自动清理仍有误关新程序的窗口。
 
-## 维护
+## 验证
 
-加载入口、peer packages 和常规检查脚本见 [package.json](package.json)。开发依赖由仓库根目录的 Bun workspace 安装提供，不依赖维护者机器上的 `node_modules` 软链。
+加载入口、peer packages 和常规检查脚本见 [package.json](package.json)。开发依赖由仓库根目录的 Bun workspace 安装提供。
 
-核对测试覆盖、替换证据或未验证范围时，读 [TESTING.md](TESTING.md)。
+测试覆盖与未验证范围见 [TESTING.md](TESTING.md)。

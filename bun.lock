@@ -3,9 +3,9 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "jinjiebewater-pi-stuff",
+      "name": "pi-stuff",
       "devDependencies": {
-        "@jinjiebewater-pi-stuff/config": "workspace:*",
+        "@pi-stuff/config": "workspace:*",
         "@types/node": "^26.4.1",
         "rolldown": "1.2.15",
         "typescript": "7.0.2",
@@ -14,7 +14,7 @@
       },
     },
     "packages/config": {
-      "name": "@jinjiebewater-pi-stuff/config",
+      "name": "@pi-stuff/config",
       "version": "0.0.0",
     },
     "packages/pi-borderless-tables": {
@@ -132,8 +132,6 @@
 
     "@google/genai": ["@google/genai@2.21.0", "", { "dependencies": { "google-auth-library": "^10.3.0", "p-retry": "^4.6.2", "protobufjs": "^7.5.4", "ws": "^8.18.0" }, "peerDependencies": { "@modelcontextprotocol/sdk": "^1.25.2" }, "optionalPeers": ["@modelcontextprotocol/sdk"], "hasInstallScript": true }, "sha512-+PDtco2/Z0ONdzCGekCoCT+O1VJS9xJQNN4XzQpXG/t3El/SWWMkCWlFRO1KmivOHPa4Q0VjUYu1HBKCZ/v33Q=="],
 
-    "@jinjiebewater-pi-stuff/config": ["@jinjiebewater-pi-stuff/config@workspace:packages/config"],
-
     "@jinjiebewater/pi-borderless-tables": ["@jinjiebewater/pi-borderless-tables@workspace:packages/pi-borderless-tables"],
 
     "@jinjiebewater/pi-herdr-session-move": ["@jinjiebewater/pi-herdr-session-move@workspace:packages/pi-herdr-session-move"],
@@ -239,6 +237,8 @@
     "@oxlint/binding-win32-x64-msvc": ["@oxlint/binding-win32-x64-msvc@1.89.0", "", { "os": "win32", "cpu": "x64" }, "sha512-hLFJ/o0f/dTJh/EW0vmcbREYSQO9tYgfiAAlsOkiLFiJuRRWvYtFELUXN5o2ijpSo/tlO1n+YlWN58tZwPG18A=="],
 
     "@oxlint/plugins": ["@oxlint/plugins@1.89.0", "", {}, "sha512-TJBBNl4KIxbxrSk7gsqlz6iM1kxidfyTizEzfWqXvijF2Ou8/Da58GvjemBVmCmaUamwRij+JwsVc0kpBFuqfg=="],
+
+    "@pi-stuff/config": ["@pi-stuff/config@workspace:packages/config"],
 
     "@polka/url": ["@polka/url@1.0.0-next.29", "", {}, "sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww=="],
 
