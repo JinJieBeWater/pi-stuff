@@ -1,17 +1,27 @@
 # pi-stuff
 
-我的 [Pi](https://github.com/earendil-works/pi) 扩展清单和自有扩展源码。
+我写的 [Pi](https://github.com/earendil-works/pi) 扩展和日常自用清单。
 
-[个人扩展清单](#个人扩展清单) · [安装本仓库扩展](#安装) · [开发指南](docs/development.md)
+[自写扩展](#自写扩展) · [自用清单](#自用清单) · [安装](#安装) · [开发指南](docs/development.md)
 
-## 个人扩展清单
+## 自写扩展
 
-按单一用途分类。标记“本仓库”的七项扩展由这里维护，其余来自第三方项目；实际启用情况以 Pi 配置为准。
+| 扩展                                                    | 用途                                                  |
+| ------------------------------------------------------- | ----------------------------------------------------- |
+| [pi-lovely-mermaid](packages/pi-lovely-mermaid)         | 将 Mermaid 显示为跟随主题的终端字符图                 |
+| [pi-borderless-tables](packages/pi-borderless-tables)   | 无框对齐表格                                          |
+| [pi-herdr-session-move](packages/pi-herdr-session-move) | 把当前 Pi 对话转到另一个已有目录                      |
+| [pi-drop-session](packages/pi-drop-session)             | 新建会话后，将旧会话文件送到废纸篓                    |
+| [pi-context-policy](packages/pi-context-policy)         | Herdr 默认说明和可配置的提示词段落                    |
+| [pi-tool-exposure](packages/pi-tool-exposure)           | 按配置调整工具暴露，使用原生 package discovery 找入口 |
+| [pi-skill-discovery](packages/pi-skill-discovery)       | 配置核心目录并按需查找其他 Skills                     |
+
+## 自用清单
+
+自用的第三方扩展和 Skill 包，按单一用途分类；实际启用情况以 Pi 配置为准。
 
 ### 界面
 
-- [pi-lovely-mermaid](packages/pi-lovely-mermaid) **（本仓库）**：将 Mermaid 显示为跟随主题的终端字符图
-- [pi-borderless-tables](packages/pi-borderless-tables) **（本仓库）**：无框对齐表格
 - [pi-unicode-charts](https://www.npmjs.com/package/@howaboua/pi-unicode-charts)：终端柱状图、折线图、散点图、sparkline 和热力图
 - [angristan/pi-extensions](https://github.com/angristan/pi-extensions)：TUI 显示、标题与统计的扩展集合
 
@@ -23,14 +33,11 @@ angristan 集合中的具体条目：
 
 ### 会话
 
-- [pi-drop-session](packages/pi-drop-session) **（本仓库）**：新建会话后，将旧会话文件送到废纸篓
-- [pi-herdr-session-move](packages/pi-herdr-session-move) **（本仓库）**：把当前 Pi 对话转到另一个已有目录
 - [pi-session-naming](https://www.npmjs.com/package/@furbyhaxx/pi-session-naming)：会话命名、浏览和管理
 - [pi-smart-btw](https://www.npmjs.com/package/@howaboua/pi-smart-btw)：异步侧会话提问，再显式注入主会话
 
 ### 上下文
 
-- [pi-context-policy](packages/pi-context-policy) **（本仓库）**：Herdr 默认说明和可配置的提示词段落
 - [pi-notes-compaction](https://www.npmjs.com/package/@howaboua/pi-notes-compaction)：持久 notes 与上下文换窗
 - [pi-auto-trees](https://www.npmjs.com/package/@howaboua/pi-auto-trees)：用 `/marker`、`/end` 为增量长任务生成分支摘要
 
@@ -64,10 +71,6 @@ angristan 集合中的具体条目：
 
 - [context7-pi](https://www.npmjs.com/package/@upstash/context7-pi)：查询库文档和示例
 
-### 工具暴露
-
-- [pi-tool-exposure](packages/pi-tool-exposure) **（本仓库）**：按配置调整工具暴露，使用原生 package discovery 找入口
-
 ### 终端控制
 
 - [pi-herdr](https://www.npmjs.com/package/@ogulcancelik/pi-herdr)：控制 Herdr 的 workspace、tab、pane 和 agent
@@ -96,10 +99,6 @@ angristan 集合中的具体条目：
 
 - [Ponytail](https://github.com/DietrichGebert/ponytail)：最小实现模式与 ponytail-review
 
-### Skill 发现
-
-- [pi-skill-discovery](packages/pi-skill-discovery) **（本仓库）**：配置核心目录并按需查找其他 Skills
-
 ### Skills
 
 - [pi-skill-adversarial-qa](https://www.npmjs.com/package/@howaboua/pi-skill-adversarial-qa)：用可执行反例检查边界与回归
@@ -117,7 +116,7 @@ pi install git:github.com/JinJieBeWater/pi-stuff
 pi config
 ```
 
-默认加载标记“本仓库”的七项扩展，第三方项目不会随之安装。在 `pi config` 中关闭不需要的入口。已有会话执行 `/reload` 或重开。
+默认加载上方“自写扩展”中的七项扩展，不安装自用清单中的第三方项目。在 `pi config` 中关闭不需要的入口。已有会话执行 `/reload` 或重开。
 
 不要同时加载这个 Git package 和相同扩展的本地入口，以免重复注册。
 

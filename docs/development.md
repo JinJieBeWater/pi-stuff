@@ -58,7 +58,7 @@ pi remove ./packages/pi-drop-session
 
 宿主提供的 Pi 库声明为 `peerDependencies`，不作为运行依赖复制。根 package 声明整个扩展集合需要的运行库，各子包声明自身的运行库；开发和测试依赖放在 `devDependencies`。资源发现与单入口过滤由根目录测试覆盖。
 
-分类清单中的第三方 package 只做导航，不参与根 manifest 的资源发现或依赖安装。
+README 的[自用清单](../README.md#自用清单)只做导航，其中的第三方 package 不参与根 manifest 的资源发现或依赖安装。
 
 ## 兼容基线
 
