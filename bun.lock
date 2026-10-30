@@ -31,6 +31,18 @@
         "@earendil-works/pi-tui": ">=1.4.0",
       },
     },
+    "packages/pi-drop-session": {
+      "name": "@jinjiebewater/pi-drop-session",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@earendil-works/pi-coding-agent": "1.4.0",
+        "@types/bun": "1.4.4",
+        "typescript": "7.0.2",
+      },
+      "peerDependencies": {
+        "@earendil-works/pi-coding-agent": "*",
+      },
+    },
     "packages/pi-herdr-session-move": {
       "name": "@jinjiebewater/pi-herdr-session-move",
       "version": "0.1.0",
@@ -133,6 +145,8 @@
     "@google/genai": ["@google/genai@2.21.0", "", { "dependencies": { "google-auth-library": "^10.3.0", "p-retry": "^4.6.2", "protobufjs": "^7.5.4", "ws": "^8.18.0" }, "peerDependencies": { "@modelcontextprotocol/sdk": "^1.25.2" }, "optionalPeers": ["@modelcontextprotocol/sdk"], "hasInstallScript": true }, "sha512-+PDtco2/Z0ONdzCGekCoCT+O1VJS9xJQNN4XzQpXG/t3El/SWWMkCWlFRO1KmivOHPa4Q0VjUYu1HBKCZ/v33Q=="],
 
     "@jinjiebewater/pi-borderless-tables": ["@jinjiebewater/pi-borderless-tables@workspace:packages/pi-borderless-tables"],
+
+    "@jinjiebewater/pi-drop-session": ["@jinjiebewater/pi-drop-session@workspace:packages/pi-drop-session"],
 
     "@jinjiebewater/pi-herdr-session-move": ["@jinjiebewater/pi-herdr-session-move@workspace:packages/pi-herdr-session-move"],
 
