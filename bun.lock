@@ -87,6 +87,20 @@
         "@earendil-works/pi-tui": "*",
       },
     },
+    "packages/pi-skill-discovery": {
+      "name": "@jinjiebewater/pi-skill-discovery",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@earendil-works/pi-ai": "1.4.0",
+        "@earendil-works/pi-coding-agent": "1.4.0",
+        "@types/bun": "1.4.4",
+        "typescript": "7.0.2",
+      },
+      "peerDependencies": {
+        "@earendil-works/pi-ai": "*",
+        "@earendil-works/pi-coding-agent": "*",
+      },
+    },
     "packages/pi-tool-exposure": {
       "name": "@jinjiebewater/pi-tool-exposure",
       "version": "0.1.0",
@@ -177,6 +191,8 @@
     "@jinjiebewater/pi-herdr-session-move": ["@jinjiebewater/pi-herdr-session-move@workspace:packages/pi-herdr-session-move"],
 
     "@jinjiebewater/pi-lovely-mermaid": ["@jinjiebewater/pi-lovely-mermaid@workspace:packages/pi-lovely-mermaid"],
+
+    "@jinjiebewater/pi-skill-discovery": ["@jinjiebewater/pi-skill-discovery@workspace:packages/pi-skill-discovery"],
 
     "@jinjiebewater/pi-tool-exposure": ["@jinjiebewater/pi-tool-exposure@workspace:packages/pi-tool-exposure"],
 
