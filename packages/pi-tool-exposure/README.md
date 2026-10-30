@@ -2,14 +2,18 @@
 
 按配置调整已安装 Pi package 的工具暴露方式。由 Pi 原生 package discovery 解析 manifest，不写死扩展文件路径，不修改上游源码，也不会自动安装包。
 
-## 安装与配置
+## 安装
 
-在仓库根目录安装：
+通过 Pi 原生 Git package 安装，在 `pi config` 中按需启用本扩展：
 
 ```sh
-bun install --frozen-lockfile
-pi install ./packages/pi-tool-exposure
+pi install git:github.com/JinJieBeWater/pi-stuff
+pi config
 ```
+
+安装的是本仓库的扩展集合。更新、卸载和单入口过滤见[仓库说明](../../README.md#安装)。
+
+## 配置
 
 在 Pi 用户目录创建 `pi-tool-exposure.json`（默认 `~/.pi/agent/`，遵循 `PI_CODING_AGENT_DIR`）：
 

@@ -4,7 +4,14 @@
 
 ## 启用
 
-在仓库根目录运行 `bun install --frozen-lockfile`，然后运行 `pi install ./packages/pi-lovely-mermaid`。在 Pi 的个人设置中将原生渲染关闭：
+通过 Pi 原生 Git package 安装，在 `pi config` 中按需启用本扩展：
+
+```sh
+pi install git:github.com/JinJieBeWater/pi-stuff
+pi config
+```
+
+整个 package 的更新、卸载和单入口过滤见[仓库说明](../../README.md#安装)。在 Pi 的个人设置中将原生渲染关闭：
 
 ```json
 {
@@ -28,7 +35,7 @@
 - 流式输出尽量渲染；完成后如果解析器报告警告，则显示源码和警告，避免隐藏未能画出的内容。
 - 仅改变交互式聊天的显示，不改写会话、模型上下文或 HTML 导出。
 
-恢复原生渲染：在仓库根目录运行 `pi remove ./packages/pi-lovely-mermaid`，把 `markdown.mermaid` 改回 `streaming`，再执行 `/reload`。
+恢复原生渲染：在 `pi config` 中停用本扩展，把 `markdown.mermaid` 改回 `streaming`，再执行 `/reload`。
 
 ## 验证与来源
 

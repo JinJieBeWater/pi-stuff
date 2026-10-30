@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "description": "Start a new Pi session, then move the previous session file to trash",
+  "keywords": [
+    "pi-package"
+  ],
   "type": "module",
   "scripts": {
     "test": "bun test",

@@ -4,12 +4,14 @@
 
 ## 安装
 
-在仓库根目录运行：
+通过 Pi 原生 Git package 安装，在 `pi config` 中按需启用本扩展：
 
 ```sh
-bun install --frozen-lockfile
-pi install ./packages/pi-context-policy
+pi install git:github.com/JinJieBeWater/pi-stuff
+pi config
 ```
+
+安装的是本仓库的扩展集合。更新、卸载和仅加载单个入口的方法见[仓库说明](../../README.md#安装)。
 
 ## 配置
 

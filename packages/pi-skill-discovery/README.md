@@ -4,6 +4,17 @@ Advertise only configured core skills in Pi's system prompt. Other eligible skil
 
 The plugin changes prompt metadata only. It leaves Pi's native skill registry and explicit `/skill:name` invocation intact. Skills marked `disable-model-invocation` are never advertised or included in search.
 
+## Install
+
+Install the repository's Git package, then select this extension in `pi config`:
+
+```sh
+pi install git:github.com/JinJieBeWater/pi-stuff
+pi config
+```
+
+The package contains all seven extensions. See the [repository README](../../README.md#安装) for single-entry filtering, updates and removal.
+
 ## Configuration
 
 Create `pi-skill-discovery.json` in Pi's agent directory, resolved by `getAgentDir()`. Pi's native `PI_CODING_AGENT_DIR` override applies.

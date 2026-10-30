@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "description": "Move one Pi conversation to an existing directory through Herdr, without Git operations",
+  "keywords": [
+    "pi-package"
+  ],
   "type": "module",
   "scripts": {
     "test": "bun test test/unit.test.ts test/lifecycle.test.ts",

@@ -1,12 +1,16 @@
 {
   "name": "pi-stuff",
   "private": true,
+  "description": "Pi extensions for terminal rendering, sessions, context and discovery",
+  "keywords": [
+    "pi-package"
+  ],
   "workspaces": [
     "packages/*"
   ],
   "type": "module",
   "scripts": {
-    "test": "vp run -r test",
+    "test": "vp run -F './packages/*' test && bun test ./test",
     "check-types": "vp run -r check-types",
     "check": "vp check && vp run -r check-types",
     "lint": "vp lint",
@@ -14,16 +18,38 @@
     "staged": "vp staged",
     "hooks:setup": "vp config"
   },
+  "dependencies": {
+    "lovely-mermaid": "0.3.3"
+  },
   "devDependencies": {
-    "@pi-stuff/config": "workspace:*",
+    "@earendil-works/pi-coding-agent": "1.4.0",
+    "@pi-stuff/config": "file:./packages/config",
+    "@types/bun": "1.4.4",
     "@types/node": "^26.4.1",
     "rolldown": "1.2.15",
     "typescript": "7.0.2",
     "vite": "npm:@voidzero-dev/vite-plus-core@1.4.0",
     "vite-plus": "1.4.0"
   },
+  "peerDependencies": {
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*",
+    "typebox": "*"
+  },
   "overrides": {
     "vite": "npm:@voidzero-dev/vite-plus-core@1.4.0"
   },
-  "packageManager": "bun@1.4.4"
+  "packageManager": "bun@1.4.4",
+  "pi": {
+    "extensions": [
+      "./packages/pi-lovely-mermaid/index.ts",
+      "./packages/pi-borderless-tables/index.ts",
+      "./packages/pi-herdr-session-move/index.ts",
+      "./packages/pi-drop-session/index.ts",
+      "./packages/pi-context-policy/index.ts",
+      "./packages/pi-tool-exposure/index.ts",
+      "./packages/pi-skill-discovery/index.ts"
+    ]
+  }
 }

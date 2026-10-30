@@ -4,14 +4,14 @@
 
 ## 启用
 
-需要 Pi `1.4.0` 或更新版本；当前只验证了 `1.4.0`。在仓库根目录运行：
+需要 Pi `1.4.0` 或更新版本；当前只验证了 `1.4.0`。通过原生 Git package 安装，在 `pi config` 中按需启用本扩展：
 
 ```sh
-bun install --frozen-lockfile
-pi install ./packages/pi-borderless-tables
+pi install git:github.com/JinJieBeWater/pi-stuff
+pi config
 ```
 
-已有会话执行 `/reload`。停用时在仓库根目录运行 `pi remove ./packages/pi-borderless-tables`，再 `/reload`。不需要额外配置，不改变现有 Mermaid、chart 或代码块扩展的设置。
+已有会话执行 `/reload`。只停用本扩展时使用 `pi config`，再 `/reload`。整个 package 的更新、卸载和单入口过滤见[仓库说明](../../README.md#安装)。本扩展不需要额外配置，不改变现有 Mermaid、chart 或代码块扩展的设置。
 
 ## 显示与复制
 

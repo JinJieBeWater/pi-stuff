@@ -6,12 +6,14 @@
 
 需要独立安装的 Pi 和 Herdr；扩展只在 Herdr 环境中注册。当前实现的验证基线为 Pi 1.4.0、Herdr 0.9.5。
 
-在仓库根目录运行：
+通过 Pi 原生 Git package 安装，在 `pi config` 中按需启用本扩展：
 
 ```sh
-bun install --frozen-lockfile
-pi install ./packages/pi-herdr-session-move
+pi install git:github.com/JinJieBeWater/pi-stuff
+pi config
 ```
+
+安装的是本仓库的扩展集合。更新、卸载和单入口过滤见[仓库说明](../../README.md#安装)。
 
 ## 使用
 

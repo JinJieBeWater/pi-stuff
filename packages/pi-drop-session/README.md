@@ -4,13 +4,14 @@
 
 ## Install
 
-Install a trash CLI separately, then install this local package in Pi:
+Install a trash CLI separately, then install the repository's Git package and select this extension in `pi config`:
 
 ```sh
-pi install /absolute/path/to/packages/pi-drop-session
+pi install git:github.com/JinJieBeWater/pi-stuff
+pi config
 ```
 
-The default executable is `trash`, found through `PATH`. This package is private and is not published to npm.
+The default executable is `trash`, found through `PATH`. The Git package contains all seven extensions; see the [repository README](../../README.md#安装) for single-entry filtering, updates and removal. It is not published to npm.
 
 ## Configure
 

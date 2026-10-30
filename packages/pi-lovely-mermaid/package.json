@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "description": "Render Mermaid blocks in Pi with lovely-mermaid",
+  "keywords": [
+    "pi-package"
+  ],
   "type": "module",
   "scripts": {
     "test": "bun test",

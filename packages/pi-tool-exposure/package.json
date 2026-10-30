@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "description": "Configuration-driven tool exposure through native Pi package discovery",
+  "keywords": [
+    "pi-package"
+  ],
   "type": "module",
   "scripts": {
     "test": "bun test",
