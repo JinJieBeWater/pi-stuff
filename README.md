@@ -1,8 +1,8 @@
 # pi-stuff
 
-我写的 [Pi](https://github.com/earendil-works/pi) 扩展和日常自用清单。
+我写的 [Pi](https://github.com/earendil-works/pi) 扩展、定制 Skills 和日常自用清单。
 
-[自写扩展](#自写扩展) · [自用清单](#自用清单) · [安装](#安装) · [开发指南](docs/development.md)
+[自写扩展](#自写扩展) · [定制 Skills](#定制-skills) · [自用清单](#自用清单) · [安装](#安装) · [开发指南](docs/development.md)
 
 ## 自写扩展
 
@@ -15,6 +15,15 @@
 | [pi-context-policy](packages/pi-context-policy)         | Herdr 默认说明和可配置的提示词段落                    |
 | [pi-tool-exposure](packages/pi-tool-exposure)           | 按配置调整工具暴露，使用原生 package discovery 找入口 |
 | [pi-skill-discovery](packages/pi-skill-discovery)       | 配置核心目录并按需查找其他 Skills                     |
+
+## 定制 Skills
+
+| Skill                                    | 用途                                                              |
+| ---------------------------------------- | ----------------------------------------------------------------- |
+| [show-me（Pi）](skills/pi/show-me)       | 统一选择代码草图、原生 Mermaid/chart、Glyph kit、GlyphCSS 或 HTML |
+| [show-me（通用）](skills/shared/show-me) | 供其他 agent 显式调用的通用版本                                   |
+
+Pi 包只注册 Pi 版；通用版不参与 Pi 包发现。两版的调用方式、第三方依赖和来源见 [Skills 说明](skills/README.md)。
 
 ## 自用清单
 
@@ -101,6 +110,8 @@ angristan 集合中的具体条目：
 
 ### Skills
 
+- [Glyph kit](https://github.com/alextraykov/glyph-kit/releases/tag/v0.3.0)：产品设计图示、可编辑规格和文档导出，`show-me` 用于线框、研究及交付材料
+- [GlyphCSS diagrams](https://github.com/JinJieBeWater/glyphcss-diagrams)：按需生成专业图种和高级数据图；从 [apresmoi/glyphcss-diagrams](https://github.com/apresmoi/glyphcss-diagrams) fork，关闭自动发现，由 `show-me` 读取或显式调用
 - [pi-skill-adversarial-qa](https://www.npmjs.com/package/@howaboua/pi-skill-adversarial-qa)：用可执行反例检查边界与回归
 - [pi-skill-agents-md](https://www.npmjs.com/package/@howaboua/pi-skill-agents-md)：编写和维护分层 AGENTS.md
 - [pi-skill-anti-ai-copy](https://www.npmjs.com/package/@howaboua/pi-skill-anti-ai-copy)：保留作者语气，减少空泛文案
@@ -116,22 +127,23 @@ pi install git:github.com/JinJieBeWater/pi-stuff
 pi config
 ```
 
-默认加载上方“自写扩展”中的七项扩展，不安装自用清单中的第三方项目。在 `pi config` 中关闭不需要的入口。已有会话执行 `/reload` 或重开。
+默认发现上方七项扩展和 Pi 版 `show-me`，不安装自用清单中的第三方项目。`show-me` 的 Glyph kit/GlyphCSS 功能需要[单独安装依赖](skills/README.md#绘图依赖)。在 `pi config` 中关闭不需要的入口。已有会话执行 `/reload` 或重开。
 
-不要同时加载这个 Git package 和相同扩展的本地入口，以免重复注册。
+不要同时加载这个 Git package 和相同扩展或 Skill 的本地入口，以免重复注册。
 
 ## 选择扩展
 
-也可编辑 Pi 用户目录 `settings.json` 的 `packages` 中已有的本包条目。例如只加载 `/drop`，其他 package 声明保持不变：
+也可编辑 Pi 用户目录 `settings.json` 的 `packages` 中已有的本包条目。例如只加载 `/drop` 并停用本包的 Skills，其他 package 声明保持不变：
 
 ```json
 {
   "source": "git:github.com/JinJieBeWater/pi-stuff",
-  "extensions": ["packages/pi-drop-session/index.ts"]
+  "extensions": ["packages/pi-drop-session/index.ts"],
+  "skills": []
 }
 ```
 
-`extensions` 省略时加载全部入口，设为 `[]` 时全部停用。修改后 `/reload` 或重开。
+`extensions` 或 `skills` 省略时加载该类型的全部入口，设为 `[]` 时停用该类型。修改后 `/reload` 或重开。
 
 ## 配置
 
@@ -162,4 +174,4 @@ pi remove git:github.com/JinJieBeWater/pi-stuff
 
 ## 许可
 
-暂未指定整体开源许可证。第三方归属与许可见 [third-party-notices.md](packages/pi-lovely-mermaid/third-party-notices.md)；依赖遵循各自的许可证。
+暂未指定整体开源许可证。Mermaid 第三方归属与许可见 [third-party-notices.md](packages/pi-lovely-mermaid/third-party-notices.md)；`show-me` 的 HumanLayer 来源与 MIT 许可见 [Skills 说明](skills/README.md#来源和许可)。依赖遵循各自的许可证。

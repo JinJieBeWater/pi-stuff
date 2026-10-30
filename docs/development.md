@@ -50,11 +50,13 @@ pi install ./packages/pi-drop-session
 pi remove ./packages/pi-drop-session
 ```
 
-本地目录由 Pi 直接加载，不会被复制或自动安装依赖。若已安装整个 Git package，先停用其中相同的入口，不要让两种来源同时注册同一扩展。
+本地目录由 Pi 直接加载，不会被复制或自动安装依赖。若已安装整个 Git package，先停用其中相同的入口，不要让两种来源同时注册同一扩展或 Skill。
+
+调试 `show-me` 时，可将用户目录中的 Skill 入口软链到仓库的 `skills/pi/show-me`，共享 agent 入口软链到 `skills/shared/show-me`。先核对同名入口，避免覆盖其他安装；两版调用方式和绘图依赖见 [Skills 说明](../skills/README.md)。
 
 ## 分发
 
-根 [package.json](../package.json) 将各包入口声明为一个 Pi Git package；各子包仍有独立 manifest。扩展直接加载 TypeScript，不需要打包。
+根 [package.json](../package.json) 将各扩展入口和 `skills/pi/show-me` 声明为一个 Pi Git package；各扩展子包仍有独立 manifest。扩展直接加载 TypeScript，Skill 直接读取 Markdown，不需要打包。`skills/shared/show-me` 供其他 agent 显式使用，不注册为第二个 Pi Skill。
 
 宿主提供的 Pi 库声明为 `peerDependencies`，不作为运行依赖复制。根 package 声明整个扩展集合需要的运行库，各子包声明自身的运行库；开发和测试依赖放在 `devDependencies`。资源发现与单入口过滤由根目录测试覆盖。
 

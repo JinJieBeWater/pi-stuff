@@ -3,7 +3,11 @@ import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { DefaultPackageManager, SettingsManager } from "@earendil-works/pi-coding-agent";
+import {
+  DefaultPackageManager,
+  loadSkillsFromDir,
+  SettingsManager,
+} from "@earendil-works/pi-coding-agent";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const manifest = JSON.parse(await readFile(join(root, "package.json"), "utf8"));
@@ -56,10 +60,30 @@ test("runtime dependencies belong to the bundle and Pi supplies all host peers",
   ).toBe(false);
 });
 
+test("show-me variants retain their native invocation modes and only Pi is bundled", () => {
+  expect(manifest.pi.skills).toEqual(["./skills/pi/show-me"]);
+  for (const [variant, explicitOnly] of [
+    ["pi", false],
+    ["shared", true],
+  ] as const) {
+    const result = loadSkillsFromDir({
+      dir: join(root, "skills", variant, "show-me"),
+      source: "path",
+    });
+    expect(result.diagnostics).toEqual([]);
+    expect(result.skills).toHaveLength(1);
+    expect(
+      result.skills.map(({ name, disableModelInvocation }) => ({ name, disableModelInvocation })),
+    ).toEqual([{ name: "show-me", disableModelInvocation: explicitOnly }]);
+  }
+});
+
 test("native Pi discovery finds the bundle and narrows resources without loading code", async () => {
   const directory = await mkdtemp(join(tmpdir(), "pi-package-test-"));
   try {
-    const discover = (source: string | { source: string; extensions: string[] }) =>
+    const discover = (
+      source: string | { source: string; extensions?: string[]; skills?: string[] },
+    ) =>
       new DefaultPackageManager({
         cwd: directory,
         agentDir: directory,
@@ -72,11 +96,27 @@ test("native Pi discovery finds the bundle and narrows resources without loading
         .map((entry) => entry.path)
         .toSorted(),
     ).toEqual(manifest.pi.extensions.map((entry: string) => resolve(root, entry)).toSorted());
+    const skill = "skills/pi/show-me/SKILL.md";
+    expect(
+      all.skills
+        .filter((entry) => entry.enabled && entry.metadata.origin === "package")
+        .map((entry) => entry.path),
+    ).toEqual([join(root, skill)]);
     const selected = "packages/pi-drop-session/index.ts";
-    const filtered = await discover({ source: root, extensions: [selected] });
+    const filtered = await discover({ source: root, extensions: [selected], skills: [] });
     expect(filtered.extensions.filter((entry) => entry.enabled).map((entry) => entry.path)).toEqual(
       [join(root, selected)],
     );
+    expect(
+      filtered.skills.filter((entry) => entry.enabled && entry.metadata.origin === "package"),
+    ).toHaveLength(0);
+    const skillOnly = await discover({ source: root, extensions: [], skills: [skill] });
+    expect(skillOnly.extensions.filter((entry) => entry.enabled)).toHaveLength(0);
+    expect(
+      skillOnly.skills
+        .filter((entry) => entry.enabled && entry.metadata.origin === "package")
+        .map((entry) => entry.path),
+    ).toEqual([join(root, skill)]);
   } finally {
     await rm(directory, { recursive: true });
   }

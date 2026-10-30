@@ -1,7 +1,7 @@
 {
   "name": "pi-stuff",
   "private": true,
-  "description": "Pi extensions for terminal rendering, sessions, context and discovery",
+  "description": "Pi extensions and skills for terminal rendering, visual explanations, sessions, context and discovery",
   "keywords": [
     "pi-package"
   ],
@@ -50,6 +50,9 @@
       "./packages/pi-context-policy/index.ts",
       "./packages/pi-tool-exposure/index.ts",
       "./packages/pi-skill-discovery/index.ts"
+    ],
+    "skills": [
+      "./skills/pi/show-me"
     ]
   }
 }
