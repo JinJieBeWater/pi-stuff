@@ -1,0 +1,29 @@
+{
+  "name": "@jinjiebewater/pi-lovely-mermaid",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Render Mermaid blocks in Pi with lovely-mermaid",
+  "type": "module",
+  "scripts": {
+    "test": "bun test",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "lovely-mermaid": "0.3.3"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "1.4.0",
+    "@earendil-works/pi-tui": "1.4.0",
+    "@types/bun": "1.4.4",
+    "typescript": "7.0.2"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*"
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}

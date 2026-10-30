@@ -2,13 +2,11 @@
   "name": "jinjiebewater-pi-stuff",
   "private": true,
   "workspaces": [
-    "apps/*",
     "packages/*"
   ],
   "type": "module",
   "scripts": {
-    "dev": "vp run -r dev",
-    "build": "vp run -r build",
+    "test": "vp run -r test",
     "check-types": "vp run -r check-types",
     "check": "vp check && vp run -r check-types",
     "lint": "vp lint",
@@ -16,15 +14,11 @@
     "staged": "vp staged",
     "hooks:setup": "vp config"
   },
-  "dependencies": {
-    "zod": "^4.5.4"
-  },
   "devDependencies": {
     "@jinjiebewater-pi-stuff/config": "workspace:*",
     "@types/node": "^26.4.1",
     "rolldown": "1.2.15",
-    "typescript": "^6.0.3",
-    "varlock": "1.23.0",
+    "typescript": "7.0.2",
     "vite": "npm:@voidzero-dev/vite-plus-core@1.4.0",
     "vite-plus": "1.4.0"
   },

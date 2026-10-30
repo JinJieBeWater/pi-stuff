@@ -14,8 +14,15 @@ local.db
 local.db-*
 
 # Environment variables
-.env
-.env*.local
+.env*
+!.env.example
+auth.json*
+models.json
+models-store.json*
+*.jsonl
+*.jsonl.*
+*.pem
+*.key
 
 # IDEs and editors
 .vscode/*
