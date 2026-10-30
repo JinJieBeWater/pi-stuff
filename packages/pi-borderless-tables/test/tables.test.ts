@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import {
+  AssistantMessageComponent,
   getMarkdownTheme,
   initTheme,
   type ExtensionAPI,
@@ -50,6 +51,26 @@ function render(source: string, width = 120) {
   return new Markdown(source, 0, 0, getMarkdownTheme()).render(width).map(stripTerminalSequences);
 }
 
+function assistantMessage(text: string): Parameters<AssistantMessageComponent["updateContent"]>[0] {
+  return {
+    role: "assistant",
+    content: [{ type: "text", text }],
+    api: "openai-completions",
+    provider: "openai",
+    model: "fixture",
+    usage: {
+      input: 0,
+      output: 0,
+      cacheRead: 0,
+      cacheWrite: 0,
+      totalTokens: 0,
+      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+    },
+    stopReason: "stop",
+    timestamp: 0,
+  };
+}
+
 test("40, 80 and 120 columns use a heavy header rule and thin data rules without a frame", () => {
   const transform = setup();
   for (const width of [40, 80, 120]) {
@@ -78,19 +99,16 @@ test.each(["user", "assistant-thinking"] as const)(
   },
 );
 
-test("streaming formats formed tables and preserves incomplete snapshots", () => {
+test("streaming formats the header and unfinished final row without changing final validation", () => {
   const transform = setup();
+  const header = sample.split("\n").slice(0, 2).join("\n");
   const firstRow = sample.split("\n").slice(0, 3).join("\n");
-  for (const source of [firstRow, sample, sample + "\n\nStill generating."])
+  for (const source of [header, firstRow, sample, sample + "\n| unfinished |"])
     expect(transform(source, { isStreaming: true })).not.toBe(source);
-  for (let end = 0; end <= sample.length; end++) {
-    const partial = sample.slice(0, end);
-    expect(transform(partial, { isStreaming: true })).toBe(
-      transform(partial, { isStreaming: false }),
-    );
-  }
-  for (const source of [sample.split("\n").slice(0, 2).join("\n"), sample + "\n| unfinished |"])
-    expect(transform(source, { isStreaming: true })).toBe(source);
+  for (const source of [header, sample + "\n| unfinished |"])
+    expect(transform(source, { isStreaming: false })).toBe(source);
+  for (const source of [firstRow, sample, sample + "\n\nStill generating."])
+    expect(transform(source, { isStreaming: true })).toBe(transform(source));
 });
 
 test("Pi Markdown updates table styling before streaming ends", () => {
@@ -119,6 +137,93 @@ test("Pi Markdown updates table styling before streaming ends", () => {
   isStreaming = false;
   component.invalidate();
   expect(component.render(84)).toEqual(streamed);
+});
+
+test.each([
+  "| A | B |\n|---|---|\n| x | y |\n| z | next |\n| last | row |",
+  sample,
+  [
+    "| 项目 | 状态 | 耗时 | 说明 |",
+    "| :--- | :---: | ---: | :--- |",
+    "| 配置加载 | 完成 | 12 ms | 读取本地配置 |",
+    "| 数据校验 | 完成 | 86 ms | 检查必填字段与数据格式 |",
+    "| 表格渲染 | 进行中 | 128 ms | 较长的说明会随终端宽度自动换行 |",
+    "| 结果保存 | 等待 | — | 渲染结束后写入文件 |",
+  ].join("\n"),
+  "A | B\n---|---\none | two\nthree | four",
+  "A | B\n---|---\n#x | y",
+  "| H |\n|---|\n| one |\n| two |",
+])("Pi assistant never restores the native frame at any streaming prefix: %s", (source) => {
+  const transform = setup();
+  const component = new AssistantMessageComponent(
+    undefined,
+    false,
+    getMarkdownTheme(),
+    undefined,
+    0,
+    [transform],
+  );
+  const headerEnd = source.indexOf("\n", source.indexOf("\n") + 1);
+  for (const width of [40, 80, 120]) {
+    for (let end = headerEnd; end <= source.length; end++) {
+      const partial = source.slice(0, end);
+      component.updateContent(assistantMessage(partial), true);
+      const lines = component.render(width);
+      const plain = lines.map(stripTerminalSequences).join("\n");
+      expect(plain).toContain("━");
+      expect(plain).not.toMatch(/[┌┐└┘├┤┬┴┼│]/);
+      expect(lines.every((line) => visibleWidth(line) <= width)).toBe(true);
+      const nativeRows = render(partial, 1000).filter((line) => line.startsWith("│"));
+      const actual = render(
+        transform(partial, { isStreaming: true, availableWidth: 1000 }),
+        1000,
+      ).join("\n");
+      for (const row of nativeRows)
+        for (const cell of row.split("│").slice(1, -1))
+          if (cell.trim()) expect(actual).toContain(cell.trim());
+    }
+  }
+  const streamed = component.render(120);
+  component.updateContent(assistantMessage(source), false);
+  expect(component.render(120)).toEqual(streamed);
+});
+
+test("Pi assistant trims terminal newlines, so only the streaming message tail may lack columns", () => {
+  const source = "| A | B |\n|---|---|\n| missing |\n";
+  const transform = setup();
+  const seen: string[] = [];
+  const component = new AssistantMessageComponent(
+    undefined,
+    false,
+    getMarkdownTheme(),
+    undefined,
+    0,
+    [
+      (text, context) => {
+        seen.push(text);
+        return transform(text, context);
+      },
+    ],
+  );
+  for (const text of [source.trimEnd(), source]) {
+    expect(render(transform(text, { isStreaming: true })).join("\n")).toContain("━");
+    component.updateContent(assistantMessage(text), true);
+    expect(component.render(80).map(stripTerminalSequences).join("\n")).toContain("━");
+    expect(seen.at(-1)).toBe(source.trimEnd());
+  }
+  component.updateContent(assistantMessage(source + "|"), true);
+  expect(component.render(80).map(stripTerminalSequences).join("\n")).toContain("┌");
+  component.updateContent(assistantMessage(source), false);
+  expect(component.render(80).map(stripTerminalSequences).join("\n")).toContain("┌");
+});
+
+test.each([
+  "| A | B |\n|---|---|\n| missing |\n\nAfter.",
+  "| A | B |\n|---|---|\n| missing |\n| x | y |",
+  "| A | B |\n|---|---|\n| x | y | extra",
+  "| A | B |\n|---|\n| x | y",
+])("streaming never relaxes validation outside the unfinished last row: %s", (source) => {
+  expect(setup()(source, { isStreaming: true })).toBe(source);
 });
 
 test("small tables also lose the frame, rather than becoming cards", () => {
@@ -289,7 +394,11 @@ test.each([
 test.each(["a\\|b", "a\tb", "a\x1b[2Jb"])(
   "ambiguous or control-bearing rows remain verbatim: %s",
   (value) => {
-    expect(setup()(sample.replace("Mermaid", value))).toBe(sample.replace("Mermaid", value));
+    const transform = setup();
+    for (const isStreaming of [true, false]) {
+      for (const source of [sample.replace("Mermaid", value), sample + "\n| " + value])
+        expect(transform(source, { isStreaming })).toBe(source);
+    }
   },
 );
 

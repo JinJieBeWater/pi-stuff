@@ -22,9 +22,15 @@ function codeSpan(line: string): string {
   return `${fence}${padding}${content}${padding}${fence}`;
 }
 
-function renderTable(table: Tokens.Table, width: number, definitions: string): string {
+function renderTable(
+  table: Tokens.Table,
+  width: number,
+  definitions: string,
+  isStreaming: boolean,
+  isLastToken: boolean,
+): string {
   const columns = table.header.length;
-  if (columns === 0 || table.rows.length === 0) return table.raw;
+  if (columns === 0 || (table.rows.length === 0 && !isStreaming)) return table.raw;
 
   const rows = [table.header, ...table.rows];
   // oxlint-disable-next-line no-control-regex -- Reject control-bearing cells before rendering.
@@ -36,10 +42,12 @@ function renderTable(table: Tokens.Table, width: number, definitions: string): s
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const cells = line.trim().replace(/^\|/, "").replace(/\|$/, "").split("|");
-    if (cells.length !== columns) return table.raw;
+    // Pi trims terminal newlines; only the streaming message's final row may lack cells.
+    const partial = isStreaming && isLastToken && i === lines.length - 1 && i > 1;
+    if (cells.length > columns || (cells.length < columns && !partial)) return table.raw;
     if (i === 1) continue;
     const row = rows[i === 0 ? 0 : i - 1];
-    if (row.length !== columns || cells.some((cell, j) => cell.trim() !== row[j].text))
+    if (row.length !== columns || row.some((cell, j) => cell.text !== (cells[j]?.trim() ?? "")))
       return table.raw;
   }
 
@@ -102,9 +110,15 @@ export default function borderlessTables(pi: ExtensionAPI) {
       if (token.type === "def") definitions.push(token.raw);
     });
     return tokens
-      .map((token) =>
+      .map((token, index) =>
         token.type === "table"
-          ? renderTable(token as Tokens.Table, context.availableWidth, definitions.join("\n"))
+          ? renderTable(
+              token as Tokens.Table,
+              context.availableWidth,
+              definitions.join("\n"),
+              context.isStreaming,
+              index === tokens.length - 1,
+            )
           : token.raw,
       )
       .join("");
