@@ -1,8 +1,8 @@
 # pi-stuff
 
-我写的 [Pi](https://github.com/earendil-works/pi) 扩展、定制 Skills 和日常自用清单。
+我写的 [Pi](https://github.com/earendil-works/pi) 扩展和定制 Skills。
 
-[自写扩展](#自写扩展) · [定制 Skills](#定制-skills) · [自用清单](#自用清单) · [安装](#安装) · [开发指南](docs/development.md)
+[自写扩展](#自写扩展) · [定制 Skills](#定制-skills) · [自用清单](docs/personal-setup.md) · [安装](#安装) · [开发指南](docs/development.md)
 
 ## 自写扩展
 
@@ -26,99 +26,6 @@
 
 Pi 包只注册 Pi 版；通用版不参与 Pi 包发现。两版的调用方式、第三方依赖和来源见 [Skills 说明](skills/README.md)。
 
-## 自用清单
-
-自用的第三方扩展和 Skill 包，按单一用途分类；实际启用情况以 Pi 配置为准。
-
-### 界面
-
-- [pi-unicode-charts](https://www.npmjs.com/package/@howaboua/pi-unicode-charts)：终端柱状图、折线图、散点图、sparkline 和热力图
-- [angristan/pi-extensions](https://github.com/angristan/pi-extensions)：TUI 显示、标题与统计的扩展集合
-
-angristan 集合中的具体条目：
-
-- 显示：`accent-color`、`cached-line-resets`、`code-blocks`、`hyperlinks`。
-- 状态：`turn-stats`、`working-timer`。
-- 会话：`auto-session-title`、`herdr-tab-title`、`reload-all`。
-
-### 会话
-
-- [pi-session-naming](https://www.npmjs.com/package/@furbyhaxx/pi-session-naming)：会话命名、浏览和管理
-- [pi-smart-btw](https://www.npmjs.com/package/@howaboua/pi-smart-btw)：异步侧会话提问，再显式注入主会话
-
-### 上下文
-
-- [pi-notes-compaction](https://www.npmjs.com/package/@howaboua/pi-notes-compaction)：持久 notes 与上下文换窗
-- [pi-auto-trees](https://www.npmjs.com/package/@howaboua/pi-auto-trees)：用 `/marker`、`/end` 为增量长任务生成分支摘要
-
-### 缓存
-
-- [pi-cache-hit-predictor](https://www.npmjs.com/package/@howaboua/pi-cache-hit-predictor)：预测切换模型或思考档位后的 prompt cache 命中
-
-### 任务管理
-
-- [rpiv-todo](https://www.npmjs.com/package/@juicesharp/rpiv-todo)：持久任务清单
-
-### 多 Agent
-
-- [pi-shepherdr](https://www.npmjs.com/package/@howaboua/pi-shepherdr)：持久、阻塞式或异步子 agent
-- [pi-agent-board](https://www.npmjs.com/package/@howaboua/pi-agent-board)：Agent 消息板与只读查看器
-
-### 交互
-
-- [pi-ask](https://www.npmjs.com/package/@howaboua/pi-ask)：交互决策、review 分流和 handoff
-
-### 网页搜索
-
-- [pi-web-access](https://www.npmjs.com/package/pi-web-access)：网页搜索、抓取、PDF 和视频分析
-- [pi-codex-web-run](https://www.npmjs.com/package/@howaboua/pi-codex-web-run)：Codex Web 搜索与导航
-
-### 浏览器
-
-- [pi-browser](https://www.npmjs.com/package/@howaboua/pi-browser)：控制已登录的浏览器
-
-### 库文档
-
-- [context7-pi](https://www.npmjs.com/package/@upstash/context7-pi)：查询库文档和示例
-
-### 终端控制
-
-- [pi-herdr](https://www.npmjs.com/package/@ogulcancelik/pi-herdr)：控制 Herdr 的 workspace、tab、pane 和 agent
-
-### 模型适配
-
-- [pi-codex-conversion](https://www.npmjs.com/package/@howaboua/pi-codex-conversion)：为 Codex 模型调整工具与 prompt 契约
-
-### 图像生成
-
-- [pi-codex-imagegen](https://www.npmjs.com/package/@howaboua/pi-codex-imagegen)：图像生成与编辑
-
-### 权限控制
-
-- [pi-permission-system](https://www.npmjs.com/package/@gotgenes/pi-permission-system)：工具、命令与文件访问的权限规则
-
-### 代码质量
-
-- [pi-simplify](https://www.npmjs.com/package/@geminixiang/pi-simplify)：简化与代码质量检查
-
-### 实验
-
-- [pi-autoresearch](https://www.npmjs.com/package/pi-autoresearch)：运行、测量并保留或丢弃实验
-
-### 开发模式
-
-- [Ponytail](https://github.com/DietrichGebert/ponytail)：最小实现模式与 ponytail-review
-
-### Skills
-
-- [Glyph kit](https://github.com/alextraykov/glyph-kit/releases/tag/v0.3.0)：产品设计图示、可编辑规格和文档导出，`show-me` 用于线框、研究及交付材料
-- [GlyphCSS diagrams](https://github.com/JinJieBeWater/glyphcss-diagrams)：按需生成专业图种和高级数据图；从 [apresmoi/glyphcss-diagrams](https://github.com/apresmoi/glyphcss-diagrams) fork，关闭自动发现，由 `show-me` 读取或显式调用
-- [pi-skill-adversarial-qa](https://www.npmjs.com/package/@howaboua/pi-skill-adversarial-qa)：用可执行反例检查边界与回归
-- [pi-skill-agents-md](https://www.npmjs.com/package/@howaboua/pi-skill-agents-md)：编写和维护分层 AGENTS.md
-- [pi-skill-anti-ai-copy](https://www.npmjs.com/package/@howaboua/pi-skill-anti-ai-copy)：保留作者语气，减少空泛文案
-- [pi-skill-skill-creator](https://www.npmjs.com/package/@howaboua/pi-skill-skill-creator)：创建、验证和维护 Skills
-- [pi-skill-harness-and-agent-engineering](https://www.npmjs.com/package/@howaboua/pi-skill-harness-and-agent-engineering)：Harness、工具、指令和缓存工作流
-
 ## 安装
 
 需要已安装 Pi 和 Git。Pi 负责下载源码和安装运行依赖，无需手动 clone、安装 Bun 或构建：
@@ -128,7 +35,7 @@ pi install git:github.com/JinJieBeWater/pi-stuff
 pi config
 ```
 
-默认发现上方八项扩展和 Pi 版 `show-me`，不安装自用清单中的第三方项目。`show-me` 的 Glyph kit/GlyphCSS 功能需要[单独安装依赖](skills/README.md#绘图依赖)。在 `pi config` 中关闭不需要的入口。已有会话执行 `/reload` 或重开。
+默认发现上方八项扩展和 Pi 版 `show-me`，不安装[个人配置清单](docs/personal-setup.md)中的第三方项目。`show-me` 的 Glyph kit/GlyphCSS 功能需要[单独安装依赖](skills/README.md#绘图依赖)。在 `pi config` 中关闭不需要的入口。已有会话执行 `/reload` 或重开。
 
 不要同时加载这个 Git package 和相同扩展或 Skill 的本地入口，以免重复注册。
 
