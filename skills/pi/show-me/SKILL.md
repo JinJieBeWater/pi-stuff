@@ -1,29 +1,24 @@
 ---
 name: show-me
-description: "Use for visual explanations, relationship diagrams, data charts, product-design sketches, and interactive demos. Choose code sketches, native Mermaid/charts, Glyph kit, GlyphCSS, or HTML."
+description: "Use for visual explanations, relationship diagrams, data charts, product-design sketches, and interactive demos. Choose code sketches, native Mermaid/charts, or HTML."
 license: MIT
 ---
 
 Help the user understand the current topic of conversation visually. Skip the preamble and keep prose brief. Pick the smallest view that makes the key point clear.
 
-Expand `~` to the current user's home directory before reading the installed-skill paths below.
-If a referenced skill is absent, use a faithful installed alternative or report the missing prerequisite.
-
 ### Choose a view
 
 Honor a requested tool or deliverable format. When editing an existing spec, keep its tool and format.
 
-| Need                                                                                                               | Default                                                        |
-| ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- |
-| Logic, calls, components, directories, or code changes                                                             | Code sketch or diff                                            |
-| Exact values, field mappings, or item-by-item comparison                                                           | Markdown table                                                 |
-| Ordinary flows, states, sequences, classes, ER, mindmaps, timelines, or Git histories                              | Native Mermaid rendering                                       |
-| One quick single-series bar/line chart, index-based point plot, sparkline, or heatmap                              | Host-native charts; GlyphCSS if the host has no chart renderer |
-| Wireframes, research results, product plans, design-system/handoff/motion figures, or composed readouts/dashboards | Glyph kit                                                      |
-| Specialist diagrams or multi-series, layered, true-XY, transformed, or non-linear/time-scale data plots            | GlyphCSS                                                       |
-| Clicking, input, switching views, or other actual interaction                                                      | HTML                                                           |
+| Need                                                                                  | Default                  |
+| ------------------------------------------------------------------------------------- | ------------------------ |
+| Logic, calls, components, directories, or code changes                                | Code sketch or diff      |
+| Exact values, field mappings, or item-by-item comparison                              | Markdown table           |
+| Ordinary flows, states, sequences, classes, ER, mindmaps, timelines, or Git histories | Native Mermaid rendering |
+| One quick single-series bar/line chart, index-based point plot, sparkline, or heatmap | Host-native charts       |
+| Clicking, input, switching views, or other actual interaction                         | HTML                     |
 
-Use native charts for a quick standalone plot; use Glyph kit when the plot belongs to a product/research deliverable. For boards, quadrants, journeys, funnels, and simple schedules, default to Glyph kit; use GlyphCSS when those types arrive as Mermaid source, or for date/dependency-based Gantt charts.
+Use native charts for a quick standalone plot.
 
 - Show logic or an algorithm as pseudocode:
 
@@ -136,20 +131,6 @@ function expandSkill(command: string): string {
 
 - Follow the selection above and split dense concepts into smaller views. When HTML is explicitly requested or a static figure cannot convey the required layout or interaction, write one focused HTML file — a diagram, an infographic, or a short slide deck, whichever fits the point. Match the product's colors, type, spacing, and components; use real labels and data; support desktop and mobile. Then open it for the user.
 
-### Glyph kit
-
-- For screen wireframes, research results, product plans, design-system/handoff or motion figures, read the installed [Glyph kit skill](~/.agents/skills/glyph-kit/SKILL.md). Follow its type guides, data-source rules and validation; draw covered figures with its official CLI.
-- Save specs beside the project/document that uses them. For an ad-hoc chat, use a task directory under `~/.local/share/agent-artifacts/`; keep outputs outside the installed skill.
-- For chat, render `--to text` and place the generated output unchanged in a top-level `text` fence. Shorten labels or choose a smaller layout if the figure is too wide.
-- For an editable Markdown document, follow the kit's `--with-spec` and `redraw` workflow. Use HTML or exports when the requested deliverable needs them.
-
-### GlyphCSS
-
-- Use it for Sankey, radar, treemap, area, packet, C4, Architecture, Requirement, Block, date/dependency Gantt, or advanced data plots from the selection above.
-- Read the installed [GlyphCSS skill](~/.agents/skills/glyphcss-diagrams/SKILL.md) directly by this path; its automatic discovery is disabled. Follow its input, size-budget, and diagnostic rules and run its bundled renderer.
-- Paste successful stdout unchanged in a top-level `text` fence. Inspect diagnostics as well as the exit code: a nonzero exit, `GLYPH_SKILL_UNFIT`, `label-folded`, `label-dropped`, or lost data/nodes/connections requires a faithful alternative or an explicit limitation.
-- Keep the original labels, values, units, and connections. Prefer a Chinese-capable route for Chinese labels; never accept `??` substitutions or silently translate, shorten, or omit input to make a render pass.
-
 ### guidance
 
 Place each visual next to the short text it supports. Keep only the calls, files, props, states, and boundaries needed to answer the user's current question or the options to resolve the current discussion point.
@@ -158,9 +139,9 @@ You may use one of these, you may use several, it is unlikely you will use all o
 
 ### Pi native rendering
 
-- Use this Mermaid route for the supported ordinary diagram types below; use the GlyphCSS workflow above for specialist types and advanced plots.
+- Use this Mermaid route for the supported ordinary diagram types below.
 - In Pi, the installed `pi-lovely-mermaid` extension renders top-level Mermaid fences directly; keep them outside lists and blockquotes. Native `markdown.mermaid: off` is intentional; no extra drawing tool or settings change is needed.
-- For native charts, write top-level `chart` fences for `pi-unicode-charts`: `type: bar|line|scatter|sparkline|heatmap`, optional `title:`, then `data:` and rows such as `Label 42`. Its scatter uses input order for x; use GlyphCSS for independent numeric X/Y coordinates.
+- For native charts, write top-level `chart` fences for `pi-unicode-charts`: `type: bar|line|scatter|sparkline|heatmap`, optional `title:`, then `data:` and rows such as `Label 42`. Its scatter uses input order for x.
 - Ordinary Markdown tables are styled by `pi-borderless-tables`; keep them as Markdown tables rather than drawing their borders by hand.
 - Supported terminal diagrams include flowcharts with subgraphs, sequence, state, class and ER diagrams. Also available: `mindmap` for hierarchies, `timeline` for chronological events, `gitGraph` for commit/branch history and `pie` for proportions (displayed as bars).
 - Use `classDef` / `:::class` when categories or states benefit from styling: `fill`, `stroke`, `color` and `font-weight:bold` are supported. Unstyled parts follow Pi's current theme.

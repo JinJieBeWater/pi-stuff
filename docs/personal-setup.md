@@ -85,8 +85,6 @@ angristan 集合中的具体条目：
 
 ## Skills
 
-- [Glyph kit](https://github.com/alextraykov/glyph-kit/releases/tag/v0.3.0)：产品设计图示、可编辑规格和文档导出，`show-me` 用于线框、研究及交付材料
-- [GlyphCSS diagrams](https://github.com/JinJieBeWater/glyphcss-diagrams)：按需生成专业图种和高级数据图；从 [apresmoi/glyphcss-diagrams](https://github.com/apresmoi/glyphcss-diagrams) fork，关闭自动发现，由 `show-me` 读取或显式调用
 - [pi-skill-adversarial-qa](https://www.npmjs.com/package/@howaboua/pi-skill-adversarial-qa)：用可执行反例检查边界与回归
 - [pi-skill-agents-md](https://www.npmjs.com/package/@howaboua/pi-skill-agents-md)：编写和维护分层 AGENTS.md
 - [pi-skill-anti-ai-copy](https://www.npmjs.com/package/@howaboua/pi-skill-anti-ai-copy)：保留作者语气，减少空泛文案

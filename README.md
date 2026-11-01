@@ -19,10 +19,10 @@
 
 ## 定制 Skills
 
-| Skill                                    | 用途                                                              |
-| ---------------------------------------- | ----------------------------------------------------------------- |
-| [show-me（Pi）](skills/pi/show-me)       | 统一选择代码草图、原生 Mermaid/chart、Glyph kit、GlyphCSS 或 HTML |
-| [show-me（通用）](skills/shared/show-me) | 供其他 agent 显式调用的通用版本                                   |
+| Skill                                    | 用途                                         |
+| ---------------------------------------- | -------------------------------------------- |
+| [show-me（Pi）](skills/pi/show-me)       | 统一选择代码草图、原生 Mermaid/chart 或 HTML |
+| [show-me（通用）](skills/shared/show-me) | 供其他 agent 显式调用的通用版本              |
 
 Pi 包只注册 Pi 版；通用版不参与 Pi 包发现。两版的调用方式、第三方依赖和来源见 [Skills 说明](skills/README.md)。
 
@@ -35,7 +35,7 @@ pi install git:github.com/JinJieBeWater/pi-stuff
 pi config
 ```
 
-默认发现上方八项扩展和 Pi 版 `show-me`，不安装[个人配置清单](docs/personal-setup.md)中的第三方项目。`show-me` 的 Glyph kit/GlyphCSS 功能需要[单独安装依赖](skills/README.md#绘图依赖)。在 `pi config` 中关闭不需要的入口。已有会话执行 `/reload` 或重开。
+默认发现上方八项扩展和 Pi 版 `show-me`，不安装[个人配置清单](docs/personal-setup.md)中的第三方项目。在 `pi config` 中关闭不需要的入口。已有会话执行 `/reload` 或重开。
 
 不要同时加载这个 Git package 和相同扩展或 Skill 的本地入口，以免重复注册。
 
