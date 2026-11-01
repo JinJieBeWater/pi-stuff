@@ -1,0 +1,18 @@
+{
+  "coreSkills": [
+    "diagnosing-bugs",
+    "codebase-design",
+    "tdd",
+    "adversarial-qa",
+    "context7-docs",
+    "research",
+    "show-me",
+    "isolated-desktop",
+    "lark",
+    "agents-md",
+    "skill-creator",
+    "writing-for-agents",
+    "anti-ai-copy"
+  ],
+  "maxResults": 5
+}

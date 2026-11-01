@@ -1,0 +1,137 @@
+{
+  "ayu": {
+    "checkpoint": {
+      "autoCheckpoint": false,
+      "enabled": false,
+      "restoreOnClone": false,
+      "restoreOnFork": false,
+      "restoreOnResume": false
+    }
+  },
+  "collapseChangelog": false,
+  "compaction": {
+    "enabled": true
+  },
+  "defaultModel": "codex/gpt-6.1-sol",
+  "defaultProvider": "magpie",
+  "defaultThinkingLevel": "high",
+  "modelThinkingLevels": {
+    "openai-codex/gpt-6.1-sol": "high"
+  },
+  "defaultTools": ["+codemode", "+tool_search"],
+  "editorPaddingX": 1,
+  "extensions": [],
+  "followUpMode": "all",
+  "fullscreenScrollbar": "auto",
+  "hideThinkingBlock": false,
+  "npmCommand": ["mise", "exec", "node@24.13.1", "--", "npm"],
+  "outputPad": 1,
+  "packages": [
+    {
+      "source": "npm:@geminixiang/pi-simplify",
+      "extensions": []
+    },
+    {
+      "source": "npm:@ogulcancelik/pi-herdr",
+      "extensions": []
+    },
+    {
+      "source": "npm:@upstash/context7-pi",
+      "extensions": []
+    },
+    "npm:@gotgenes/pi-permission-system",
+    "npm:@howaboua/pi-cache-hit-predictor",
+    {
+      "extensions": [
+        "extensions/cached-line-resets/index.ts",
+        "extensions/code-blocks/index.ts",
+        "extensions/reload-all/index.ts",
+        "extensions/turn-stats/index.ts",
+        "extensions/hyperlinks/index.ts",
+        "extensions/working-timer/index.ts"
+      ],
+      "source": "git:github.com/angristan/pi-extensions"
+    },
+    "../../my/pi-stuff/packages/pi-auto-session-title",
+    "../../my/pi-stuff/packages/pi-skill-discovery",
+    "../../my/personal/fork/howaboua-pi-stuff/packages/pi-codex-conversion",
+    "npm:@furbyhaxx/pi-session-naming",
+    "npm:@howaboua/pi-auto-trees",
+    "npm:@howaboua/pi-ask",
+    "npm:@howaboua/pi-smart-btw",
+    "npm:@howaboua/pi-skill-adversarial-qa",
+    "npm:@howaboua/pi-skill-agents-md",
+    "npm:@howaboua/pi-skill-anti-ai-copy",
+    "npm:@howaboua/pi-skill-skill-creator",
+    {
+      "source": "git:github.com/DietrichGebert/ponytail",
+      "skills": ["skills/ponytail-review/SKILL.md"]
+    },
+    {
+      "source": "npm:@juicesharp/rpiv-todo",
+      "extensions": []
+    },
+    "npm:pi-web-access",
+    "npm:pi-autoresearch",
+    "npm:@howaboua/pi-codex-web-run",
+    {
+      "source": "npm:@howaboua/pi-codex-imagegen",
+      "extensions": []
+    },
+    "../../my/tools/pi-evals",
+    "npm:@howaboua/pi-browser",
+    "npm:@howaboua/pi-skill-harness-and-agent-engineering",
+    "npm:@howaboua/pi-agent-board",
+    "../../my/pi-stuff/packages/pi-lovely-mermaid",
+    "npm:@howaboua/pi-notes-compaction",
+    "npm:@howaboua/pi-unicode-charts@0.1.3",
+    "../../my/pi-stuff/packages/pi-borderless-tables",
+    "../../my/pi-stuff/packages/pi-herdr-session-move",
+    "../../my/pi-stuff/packages/pi-herdr-tab-title",
+    "../../my/pi-stuff/packages/pi-drop-session",
+    "../../my/pi-stuff/packages/pi-context-policy",
+    "../../my/pi-stuff/packages/pi-tool-exposure",
+    "git:github.com/stnly/pi-grok",
+    "../../my/personal/fork/howaboua-pi-stuff/packages/pi-shepherdr"
+  ],
+  "quietStartup": true,
+  "retry": {
+    "enabled": true
+  },
+  "session": {
+    "browser": {
+      "enabled": true
+    },
+    "rename": {
+      "enabled": true
+    },
+    "titleGeneration": {
+      "enabled": false
+    }
+  },
+  "showCacheMissNotices": true,
+  "showHardwareCursor": true,
+  "steeringMode": "all",
+  "transport": "auto",
+  "terminal": {
+    "clearOnShrink": false,
+    "imageWidthCells": 48,
+    "showTerminalProgress": true
+  },
+  "theme": "catppuccin-mocha",
+  "treeFilterMode": "all",
+  "tuiMode": "fullscreen",
+  "markdown": {
+    "mermaid": "off"
+  },
+  "codemode": {
+    "mode": "on",
+    "inlineBudget": 4500
+  },
+  "fullscreenExitOutput": "resume-hint",
+  "skills": [
+    "-~/.agents/skills/show-me",
+    "-~/.agents/skills/herdr",
+    "-~/.agents/skills/herdr-gpui-browser"
+  ]
+}

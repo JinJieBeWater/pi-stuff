@@ -1,0 +1,9 @@
+{
+  "provider": "auto",
+  "toolActivation": "none",
+  "toolExposure": "deferred",
+  "workflow": "none",
+  "fetchContent": {
+    "curl": "/opt/homebrew/opt/curl-impersonate/bin/curl_chrome152_macos"
+  }
+}

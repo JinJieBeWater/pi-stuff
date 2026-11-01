@@ -1,0 +1,62 @@
+{
+  "scope": {
+    "allProviders": "off",
+    "additionalProviders": ["magpie-opus-responses", "magpie", "magpie-opus-yisihete16"]
+  },
+  "tools": {
+    "viewImageFallback": true,
+    "applyPatchOnly": false,
+    "viewImageOnly": false,
+    "customRustBinariesDir": "",
+    "autoReasoning": false
+  },
+  "ui": {
+    "statusLine": true,
+    "toolRenaming": true,
+    "compactTools": "minimal",
+    "codeModeDetails": false,
+    "backgroundShellWidget": true,
+    "backgroundShellToggleShortcut": "alt+w",
+    "backgroundShellPrevShortcut": "alt+q",
+    "backgroundShellNextShortcut": "alt+e",
+    "backgroundShellCloseShortcut": "alt+r"
+  },
+  "compaction": {
+    "method": "v2",
+    "v2UserMessageRetention": 64
+  },
+  "openai": {
+    "fast": false,
+    "verbosity": "low",
+    "cacheDiagnostics": "status-and-log",
+    "harnessIdentifierHeader": false,
+    "lunaCacheKeepaliveMinutes": 0,
+    "proxyResponsesLite": false
+  },
+  "voiceFeaturesOnly": false,
+  "prompt": {
+    "heavySystemPromptOverwrite": "gpt",
+    "currentTimeReminderMinutes": 30
+  },
+  "voice": {
+    "v3Voice": "cove",
+    "autoResumeRealtime": true,
+    "delegationAcknowledgements": false,
+    "forwardReasoningSummaries": false,
+    "dictationShortcut": "ctrl+alt+i",
+    "realtimeShortcut": "ctrl+alt+space",
+    "muteShortcut": "ctrl+alt+m",
+    "serverShortcut": "ctrl+alt+g",
+    "dictationShortcutMode": "push",
+    "contextReasoning": "high",
+    "taskDelegationModel": "magpie/codex/gpt-6-luna",
+    "refreshRealtimeAfterCompaction": false
+  },
+  "executionMode": "normal",
+  "notebook": {
+    "journals": "on",
+    "checkpointCleanup": "never",
+    "maxHeapMiB": 4096,
+    "plainCommandOutput": false
+  }
+}

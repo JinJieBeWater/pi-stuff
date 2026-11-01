@@ -1,0 +1,31 @@
+{
+  "adapters": [
+    {
+      "source": "npm:@juicesharp/rpiv-todo",
+      "tools": {
+        "todo": "direct"
+      }
+    },
+    {
+      "source": "npm:@geminixiang/pi-simplify",
+      "tools": {
+        "simplify_candidates": "deferred",
+        "code_smell_scan": "deferred",
+        "code_smell_findings": "deferred"
+      }
+    },
+    {
+      "source": "npm:@upstash/context7-pi",
+      "tools": {
+        "resolve-library-id": "deferred",
+        "query-docs": "deferred"
+      }
+    },
+    {
+      "source": "npm:@howaboua/pi-codex-imagegen",
+      "tools": {
+        "imagegen": "deferred"
+      }
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "description": "复杂方案权衡、常规解法受阻或已有测量证据的复杂性能优化；按任务授权分析或实施",
+  "model": "magpie/codex/gpt-6.1-sol",
+  "thinking": "max",
+  "prompt": "../general/prompt.md",
+  "accepts": [],
+  "pi_args": []
+}

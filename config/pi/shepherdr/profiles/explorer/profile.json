@@ -1,0 +1,8 @@
+{
+  "description": "研究、探索、诊断与方案；研究对象只读，可写任务明确指定的报告和证据文件",
+  "model": "magpie/codex/gpt-6-luna",
+  "thinking": "high",
+  "prompt": "prompt.md",
+  "accepts": [],
+  "pi_args": []
+}

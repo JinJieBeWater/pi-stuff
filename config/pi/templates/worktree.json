@@ -1,0 +1,13 @@
+{
+  "dir": ".worktrees",
+  "branchPrefix": "spencer/",
+  "linkEnvFiles": false,
+  "postCreate": [
+    "MAIN=$(dirname \"$(git rev-parse --git-common-dir)\"); if [ -f \"$MAIN/.env\" ]; then cp \"$MAIN/.env\" .env; fi",
+    "MAIN=$(dirname \"$(git rev-parse --git-common-dir)\"); if [ -e \"$MAIN/.rpiv\" ]; then ln -sfn \"$MAIN/.rpiv\" .rpiv; fi",
+    "MAIN=$(dirname \"$(git rev-parse --git-common-dir)\"); if [ -e \"$MAIN/.references\" ]; then ln -sfn \"$MAIN/.references\" .references; fi",
+    "MAIN=$(dirname \"$(git rev-parse --git-common-dir)\"); if [ -e \"$MAIN/.pi\" ]; then ln -sfn \"$MAIN/.pi\" .pi; fi",
+    "bun install"
+  ],
+  "preRemove": []
+}

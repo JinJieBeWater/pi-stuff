@@ -1,22 +1,22 @@
 # pi-stuff
 
-我写的 [Pi](https://github.com/earendil-works/pi) 扩展和定制 Skills。
+我写的 [Pi](https://github.com/earendil-works/pi) 扩展、定制 Skills 和自用配置。
 
-[自写扩展](#自写扩展) · [定制 Skills](#定制-skills) · [自用清单](docs/personal-setup.md) · [安装](#安装) · [开发指南](docs/development.md)
+[自写扩展](#自写扩展) · [定制 Skills](#定制-skills) · [自用清单](docs/personal-setup.md) · [个人配置](config/README.md) · [安装](#安装) · [开发指南](docs/development.md)
 
 ## 自写扩展
 
-| 扩展                                                    | 用途                                                  |
-| ------------------------------------------------------- | ----------------------------------------------------- |
-| [pi-lovely-mermaid](packages/pi-lovely-mermaid)         | 将 Mermaid 显示为跟随主题的终端字符图                 |
-| [pi-borderless-tables](packages/pi-borderless-tables)   | 无框对齐表格                                          |
-| [pi-herdr-session-move](packages/pi-herdr-session-move) | 把当前 Pi 对话转到另一个已有目录                      |
-| [pi-herdr-tab-title](packages/pi-herdr-tab-title)       | 在 Herdr Core/App 和旧 TUI 中同步 Pi 标签页名称       |
+| 扩展                                                    | 用途                                                   |
+| ------------------------------------------------------- | ------------------------------------------------------ |
+| [pi-lovely-mermaid](packages/pi-lovely-mermaid)         | 将 Mermaid 显示为跟随主题的终端字符图                  |
+| [pi-borderless-tables](packages/pi-borderless-tables)   | 无框对齐表格                                           |
+| [pi-herdr-session-move](packages/pi-herdr-session-move) | 把当前 Pi 对话转到另一个已有目录                       |
+| [pi-herdr-tab-title](packages/pi-herdr-tab-title)       | 在 Herdr Core/App 和旧 TUI 中同步 Pi 标签页名称        |
 | [pi-auto-session-title](packages/pi-auto-session-title) | 自动维护会话标题，支持用户语言、自定义提示词和模型回退 |
-| [pi-drop-session](packages/pi-drop-session)             | 新建会话后，将旧会话文件送到废纸篓                    |
-| [pi-context-policy](packages/pi-context-policy)         | 按环境选择提示词、托管扩展、工具和 Skill              |
-| [pi-tool-exposure](packages/pi-tool-exposure)           | 按配置调整工具暴露，使用原生 package discovery 找入口 |
-| [pi-skill-discovery](packages/pi-skill-discovery)       | 配置核心目录并按需查找其他 Skills                     |
+| [pi-drop-session](packages/pi-drop-session)             | 新建会话后，将旧会话文件送到废纸篓                     |
+| [pi-context-policy](packages/pi-context-policy)         | 按环境选择提示词、托管扩展、工具和 Skill               |
+| [pi-tool-exposure](packages/pi-tool-exposure)           | 按配置调整工具暴露，使用原生 package discovery 找入口  |
+| [pi-skill-discovery](packages/pi-skill-discovery)       | 配置核心目录并按需查找其他 Skills                      |
 
 ## 定制 Skills
 
@@ -64,6 +64,8 @@ pi config
 - [Skill 发现](packages/pi-skill-discovery/README.md#配置)：默认核心名单为空，所有可自动调用的 Skills 都按需查找；原生 `/skill:name` 仍可用。
 
 配置型扩展从 Pi 用户目录读取同名 JSON，默认目录为 `~/.pi/agent/`，遵循 `PI_CODING_AGENT_DIR`。配置文件可省略；具体默认行为、字段和限制见各扩展 README。修改 JSON 后 `/reload` 或重开。
+
+[个人配置](config/README.md)另行保存本机使用的设置、指令、角色预设和 todo 指引，按需对比合并，不参与默认安装。
 
 ## 更新
 

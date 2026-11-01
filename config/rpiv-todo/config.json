@@ -1,0 +1,12 @@
+{
+  "guidance": {
+    "promptGuidelines": [
+      "Default to working without todo. Use it on explicit request, or when independent deliverables, dependencies or work across turns/context recovery create a real risk of losing progress. Keep other work untracked, including small tasks with many tool calls, several files or list-form instructions.",
+      "Track verifiable outcomes with short imperative subjects and acceptance criteria in description; keep routine reading, editing and checking within the outcome.",
+      "For tracked work, reconcile the existing list with actual progress before starting or switching outcomes, after scope changes or context recovery, and before pausing or delivering. Reuse unfinished tasks for scope changes; add tasks for new deliverables or follow-up work.",
+      "Before work, update the task id/status to in_progress with activeForm; keep at most one task in_progress. Return blocked or paused work to pending with its reason before switching or waiting.",
+      "Complete each outcome immediately after its work and relevant checks pass. Keep failed or partial work open and repair within the same task; link an unblock task only for a separate actionable outcome. Delete only explicitly cancelled unfinished tasks; preserve unrelated unfinished work.",
+      "Set blockedBy on create; use addBlockedBy/removeBlockedBy on update."
+    ]
+  }
+}

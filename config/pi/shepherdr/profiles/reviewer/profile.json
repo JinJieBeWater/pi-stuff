@@ -1,0 +1,9 @@
+{
+  "description": "按明确基线或对象范围独立评审；被评对象只读，可写指定报告，修复交回作者",
+  "model": "magpie/codex/gpt-6.1-sol",
+  "thinking": "xhigh",
+  "prompt": "prompt.md",
+  "share_context": false,
+  "accepts": ["base"],
+  "pi_args": []
+}

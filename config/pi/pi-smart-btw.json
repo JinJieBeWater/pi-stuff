@@ -1,0 +1,13 @@
+{
+  "provider": "magpie",
+  "modelId": "codex/gpt-6-luna",
+  "command": "pi",
+  "thinking": "low",
+  "composeShortcut": "alt+z",
+  "injectShortcut": "alt+c",
+  "dismissShortcut": "alt+x",
+  "foldShortcut": "alt+j",
+  "unfoldShortcut": "alt+k",
+  "previousShortcut": "alt+h",
+  "nextShortcut": "alt+l"
+}

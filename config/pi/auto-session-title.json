@@ -1,0 +1,9 @@
+{
+  "models": [
+    {
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "thinkingLevel": "off"
+    }
+  ]
+}

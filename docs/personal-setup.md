@@ -4,6 +4,8 @@
 
 清单中的项目不随 `pi-stuff` 自动安装。本仓库维护的扩展和 Skills 见[仓库 README](../README.md)。
 
+当前使用的参数、Pi 指令、Shepherdr 角色预设与 todo 指引见[个人配置](../config/README.md)。
+
 ## 界面
 
 - [pi-unicode-charts](https://www.npmjs.com/package/@howaboua/pi-unicode-charts)：终端柱状图、折线图、散点图、sparkline 和热力图
@@ -46,6 +48,7 @@ angristan 集合中的具体条目：
 
 - [pi-web-access](https://www.npmjs.com/package/pi-web-access)：网页搜索、抓取、PDF 和视频分析
 - [pi-codex-web-run](https://www.npmjs.com/package/@howaboua/pi-codex-web-run)：Codex Web 搜索与导航
+- [pi-grok](https://github.com/stnly/pi-grok)：通过 Grok 订阅搜索 X
 
 ## 浏览器
 
@@ -78,6 +81,10 @@ angristan 集合中的具体条目：
 ## 实验
 
 - [pi-autoresearch](https://www.npmjs.com/package/pi-autoresearch)：运行、测量并保留或丢弃实验
+
+## 评测
+
+- `~/my/tools/pi-evals`：个人 Skill 包，用于 eval 设计、审计与 hillclimb；源码在独立目录维护，通过本地 package 加载。
 
 ## 开发模式
 

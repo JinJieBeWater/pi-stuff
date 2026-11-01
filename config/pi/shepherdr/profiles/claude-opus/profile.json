@@ -1,0 +1,9 @@
+{
+  "description": "仅在明确需要 Claude Opus 时委派；执行授权任务并验证交付",
+  "model": "magpie-opus-responses/claude/claude-opus-5-5",
+  "thinking": "high",
+  "prompt": "../general/prompt.md",
+  "share_context": true,
+  "accepts": [],
+  "pi_args": []
+}

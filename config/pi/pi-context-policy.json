@@ -1,0 +1,12 @@
+{
+  "extensions": [
+    {
+      "source": "npm:@ogulcancelik/pi-herdr",
+      "whenEnv": {
+        "HERDR_ENV": "1",
+        "HERDR_PANE_ID": true,
+        "HC_TERMINAL_SOCKET": false
+      }
+    }
+  ]
+}

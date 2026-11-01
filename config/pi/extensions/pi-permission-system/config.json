@@ -1,0 +1,50 @@
+{
+  "$schema": "https://raw.githubusercontent.com/gotgenes/pi-packages/main/packages/pi-permission-system/schemas/permissions.schema.json",
+  "debugLog": false,
+  "permissionReviewLog": false,
+  "yoloMode": true,
+  "doublePressToConfirm": false,
+  "shellTools": {
+    "exec_command": {
+      "commandArgument": "cmd",
+      "workdirArgument": "workdir"
+    }
+  },
+  "permission": {
+    "*": "allow",
+    "path": {
+      "*": "allow",
+      "*.env": "ask",
+      "*.env.*": "ask",
+      "*.env.example": "allow",
+      "~/.ssh/*": "ask",
+      "~/.aws/*": "deny",
+      "~/.gnupg/*": "deny",
+      "~/.pi/agent/auth.json*": "deny"
+    },
+    "apply_patch": "ask",
+    "bash": {
+      "*": "allow",
+      "rm *": "ask",
+      "*/rm *": "ask",
+      "rmdir *": "ask",
+      "*/rmdir *": "ask",
+      "git *reset *--hard*": "ask",
+      "*/git *reset *--hard*": "ask",
+      "git *clean*": "ask",
+      "*/git *clean*": "ask",
+      "git *push *-*f*": "ask",
+      "*/git *push *-*f*": "ask",
+      "sudo *": "ask",
+      "*/sudo *": "ask"
+    },
+    "external_directory_read": "allow",
+    "external_directory_write": {
+      "*": "ask",
+      "~/my/*": "allow",
+      "~/.cache/pi-tmp/*": "allow",
+      "/tmp/*": "allow",
+      "/private/tmp/*": "allow"
+    }
+  }
+}

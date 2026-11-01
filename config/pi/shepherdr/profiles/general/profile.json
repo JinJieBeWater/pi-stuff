@@ -1,0 +1,8 @@
+{
+  "description": "执行授权任务并验证交付；修改限于任务范围，只读任务保持只读，可写指定报告",
+  "model": "magpie/codex/gpt-6.1-sol",
+  "thinking": "high",
+  "prompt": "prompt.md",
+  "accepts": [],
+  "pi_args": []
+}

@@ -1,0 +1,7 @@
+{
+  "summary": {
+    "enabled": true,
+    "model": "magpie/codex/gpt-6-luna",
+    "thinking": "low"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "description": "速度与成本优先的通用任务预设；用于分析、实现和验证，尤其适合批量、可并行或需要快速反馈的任务",
+  "model": "magpie/opencode-go/deepseek-v4.1-flash",
+  "thinking": "high",
+  "prompt": "../general/prompt.md",
+  "share_context": false,
+  "accepts": [],
+  "pi_args": []
+}
