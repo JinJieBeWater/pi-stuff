@@ -1,0 +1,22 @@
+{
+  "name": "@jinjiebewater/pi-herdr-tab-title",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mirror Pi session names to verified Herdr Core/App and TUI tabs",
+  "keywords": [
+    "pi-package"
+  ],
+  "type": "module",
+  "scripts": {
+    "test": "vp test run --config ../../vite.config.ts --dir .",
+    "check-types": "vp exec tsc"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}

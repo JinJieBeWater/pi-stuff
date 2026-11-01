@@ -1,12 +1,8 @@
-import { readFile, realpath, stat } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { pathToFileURL } from "node:url";
-import {
-  DefaultPackageManager,
-  SettingsManager,
-  getAgentDir,
-  type ExtensionAPI,
-} from "@earendil-works/pi-coding-agent";
+import { fileURLToPath } from "node:url";
+import { getAgentDir, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { loadExtensionPackages } from "../../lib/extension-packages.ts";
 
 type Exposure = "direct" | "deferred" | "model-only";
 type Adapter = { source: string; tools: Record<string, Exposure> };
@@ -55,19 +51,11 @@ export function parseExposureConfig(value: unknown): ExposureConfig {
   return { enabled: value.enabled ?? true, adapters };
 }
 
-export function withExposure(
-  pi: ExtensionAPI,
-  rules: Record<string, Exposure>,
-  registered = new Map<string, symbol>(),
-): ExtensionAPI {
+export function withExposure(pi: ExtensionAPI, rules: Record<string, Exposure>): ExtensionAPI {
   const policy = new Map(Object.entries(rules));
-  const owner = Symbol("adapted factory");
   return {
     ...pi,
     registerTool(tool) {
-      if (registered.has(tool.name) && registered.get(tool.name) !== owner)
-        throw new Error(`${fileName}: duplicate adapted tool ${tool.name}`);
-      registered.set(tool.name, owner);
       const direct = tool.exposure === undefined || tool.exposure === "direct";
       const exposure = policy.get(tool.name);
       pi.registerTool(direct && exposure ? { ...tool, exposure } : tool);
@@ -81,68 +69,15 @@ export async function registerAdapters(
   agentDir = getAgentDir(),
 ) {
   if (!config.enabled || !config.adapters.length) return;
-  const settings = SettingsManager.create(agentDir, agentDir, { projectTrusted: false });
-  const configured = settings.getGlobalSettings().packages ?? [];
-  const manager = new DefaultPackageManager({
-    cwd: agentDir,
+  const rules = new Map(config.adapters.map((adapter) => [adapter.source, adapter.tools]));
+  await loadExtensionPackages({
+    pi,
+    packages: [...rules.keys()].map((source) => ({ source, enabled: true })),
     agentDir,
-    settingsManager: SettingsManager.inMemory({
-      packages: config.adapters.map((adapter) => adapter.source),
-    }),
+    configName: fileName,
+    parentPath: fileURLToPath(import.meta.url),
+    wrap: (api, source) => withExposure(api, rules.get(source)!),
   });
-  const roots = new Set<string>();
-  for (const adapter of config.adapters) {
-    const installed = manager.getInstalledPath(adapter.source, "user");
-    if (!installed || !(await stat(installed)).isDirectory())
-      throw new Error(`${fileName}: install the package directory first: ${adapter.source}`);
-    const root = await realpath(installed);
-    if (roots.has(root))
-      throw new Error(`${fileName}: sources resolve to the same package: ${adapter.source}`);
-    roots.add(root);
-    for (const entry of configured) {
-      const source = typeof entry === "string" ? entry : entry.source;
-      const nativePath = manager.getInstalledPath(source, "user");
-      if (!nativePath || (await realpath(nativePath)) !== root) continue;
-      if (
-        typeof entry === "string" ||
-        !Array.isArray(entry.extensions) ||
-        entry.extensions.length !== 0
-      )
-        throw new Error(
-          `${fileName}: set extensions: [] on the native package declaration before adapting ${source}`,
-        );
-    }
-  }
-  const resources = await manager.resolve(async () => "error");
-  const entries = config.adapters.map((adapter) => ({
-    adapter,
-    files: resources.extensions
-      .filter(
-        (resource) =>
-          resource.enabled &&
-          resource.metadata.origin === "package" &&
-          resource.metadata.source === adapter.source,
-      )
-      .map((resource) => resource.path),
-  }));
-  const files = new Set<string>();
-  for (const entry of entries) {
-    if (!entry.files.length)
-      throw new Error(`${fileName}: no package extensions discovered for ${entry.adapter.source}`);
-    for (const file of entry.files) {
-      const canonical = await realpath(file);
-      if (files.has(canonical)) throw new Error(`${fileName}: duplicate discovered entry ${file}`);
-      files.add(canonical);
-    }
-  }
-  const registered = new Map<string, symbol>();
-  for (const entry of entries)
-    for (const file of entry.files) {
-      const module = await import(pathToFileURL(file).href);
-      if (typeof module.default !== "function")
-        throw new Error(`${fileName}: entry must export an extension factory: ${file}`);
-      await module.default(withExposure(pi, entry.adapter.tools, registered));
-    }
 }
 
 export default async function toolExposure(pi: ExtensionAPI) {

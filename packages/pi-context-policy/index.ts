@@ -1,72 +1,36 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { getAgentDir, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { fileName, matchesEnv, parsePolicy, type Policy } from "./policy.ts";
+import { registerResources } from "./resources.ts";
 
-type Section = { id: string; text: string; whenEnv: Record<string, string | true> };
-export type Policy = { enabled: boolean; sections: Section[] };
-const fileName = "pi-context-policy.json";
-
-function object(value: unknown, label: string): Record<string, unknown> {
-  if (!value || typeof value !== "object" || Array.isArray(value))
-    throw new Error(`${fileName}: ${label} must be an object`);
-  return value as Record<string, unknown>;
-}
-function keys(value: Record<string, unknown>, allowed: string[], label: string) {
-  for (const key of Object.keys(value))
-    if (!allowed.includes(key)) throw new Error(`${fileName}: unknown ${label} field ${key}`);
-}
-export function parsePolicy(value: unknown): Policy {
-  const config = object(value, "config");
-  keys(config, ["enabled", "sections"], "config");
-  if (config.enabled !== undefined && typeof config.enabled !== "boolean")
-    throw new Error(`${fileName}: enabled must be a boolean`);
-  const entries =
-    config.sections === undefined
-      ? [
-          {
-            id: "herdr",
-            text: "你当前运行在 Herdr 中，自动识别可以并发的任务，通过 Shepherdr 进行并发。",
-            whenEnv: { HERDR_ENV: "1", HERDR_PANE_ID: true },
-          },
-        ]
-      : config.sections;
-  if (!Array.isArray(entries)) throw new Error(`${fileName}: sections must be an array`);
-  const ids = new Set<string>();
-  const sections = entries.map((entry, index): Section => {
-    const block = object(entry, `sections[${index}]`);
-    keys(block, ["id", "text", "whenEnv"], `sections[${index}]`);
-    if (typeof block.id !== "string" || !/^[a-z][a-z0-9_-]*$/.test(block.id) || ids.has(block.id))
-      throw new Error(`${fileName}: section id must be a unique lowercase identifier`);
-    if (typeof block.text !== "string" || !block.text.trim())
-      throw new Error(`${fileName}: section text must be nonempty`);
-    const conditions = object(block.whenEnv === undefined ? {} : block.whenEnv, "whenEnv");
-    for (const [name, expected] of Object.entries(conditions)) {
-      if (
-        !/^[A-Za-z_][A-Za-z0-9_]*$/.test(name) ||
-        (typeof expected !== "string" && expected !== true)
-      )
-        throw new Error(`${fileName}: whenEnv values must be strings or true`);
-    }
-    ids.add(block.id);
-    return { id: block.id, text: block.text, whenEnv: conditions as Section["whenEnv"] };
-  });
-  return { enabled: config.enabled ?? true, sections };
-}
+export { parsePolicy, type Policy } from "./policy.ts";
+const defaultSections: NonNullable<Policy["sections"]> = [
+  {
+    id: "herdr-core",
+    text: "当前运行在 Herdr Core 管理的终端中。agent 协作使用 Shepherdr；需要直接操作终端时先读 hc --skill；需要操作桌面窗口时先确认 herdr-app 可用并读 herdr-app --skill。",
+    whenEnv: { HC_TERMINAL_ID: true, HC_TERMINAL_SOCKET: true },
+  },
+  {
+    id: "herdr-tui",
+    text: "当前运行在旧 Herdr TUI 管理的 pane 中。agent 协作使用 Shepherdr；需要操作终端或布局时先读 herdr --skill。",
+    whenEnv: { HERDR_ENV: "1", HERDR_PANE_ID: true },
+  },
+];
 
 export function registerPolicy(
   pi: ExtensionAPI,
   config: Policy,
   env: NodeJS.ProcessEnv = process.env,
 ) {
-  if (!config.enabled || !config.sections.length) return;
+  if (!config.enabled || config.sections?.length === 0) return;
   pi.on("before_agent_start", (event) => {
-    for (const block of config.sections) {
-      const matches = Object.entries(block.whenEnv).every(
-        ([name, expected]) =>
-          Object.hasOwn(env, name) &&
-          (expected === true ? Boolean(env[name]) : env[name] === expected),
-      );
-      if (matches) event.systemPromptOptions.sections[`context-policy-${block.id}`] = block.text;
+    for (const block of config.sections ?? defaultSections) {
+      if (matchesEnv(block.whenEnv, env)) {
+        event.systemPromptOptions.sections[`context-policy-${block.id}`] = block.text;
+        // Core terminals can inherit legacy HERDR_* markers; defaults select one backend.
+        if (config.sections === undefined) break;
+      }
     }
   });
 }
@@ -80,5 +44,7 @@ export default async function contextPolicy(pi: ExtensionAPI) {
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
   }
-  registerPolicy(pi, parsePolicy(value));
+  const config = parsePolicy(value);
+  await registerResources(pi, config);
+  registerPolicy(pi, config);
 }

@@ -11,24 +11,15 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
-import { basename, isAbsolute, join, resolve } from "node:path";
+import { isAbsolute, join, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
+import type { MoveRuntime } from "./runtime.ts";
 
-type ProcessInfo = {
-  shell_pid?: number;
-  foreground_process_group_id?: number;
-  foreground_processes?: { pid: number }[];
-};
-type HerdrResult = {
-  pane?: { pane_id: string };
-  root_pane?: { pane_id: string };
-  process_info?: ProcessInfo;
-};
-export type RunHerdr = (args: string[], signal?: AbortSignal) => Promise<HerdrResult>;
 type Context = Pick<ExtensionContext, "cwd" | "sessionManager" | "hasPendingMessages"> & {
   ui: Pick<ExtensionContext["ui"], "getEditorText">;
 };
 export type MoveRecord = {
+  backend: MoveRuntime["kind"];
   directory: string;
   cwd: string;
   sourcePid: number;
@@ -96,16 +87,11 @@ export async function marker(directory: string, name: string, value: unknown) {
   }
 }
 
-function required(value: string | undefined, label: string): string {
-  if (!value) throw new Error("Herdr did not return " + label);
-  return value;
-}
-
 export async function relocate(
   ctx: Context,
   target: string,
   options: {
-    run: RunHerdr;
+    runtime: MoveRuntime;
     agentDir: string;
     extension: string;
     sourcePid: number;
@@ -114,7 +100,7 @@ export async function relocate(
     timeout?: number;
   },
 ): Promise<MoveRecord> {
-  const { run, signal } = options;
+  const { runtime, signal } = options;
   signal?.throwIfAborted();
   const cwd = await canonicalTarget(target, ctx.cwd);
   const sourceSessionFile = ctx.sessionManager.getSessionFile();
@@ -125,68 +111,36 @@ export async function relocate(
   if (ctx.ui.getEditorText().trim()) throw new Error("Keep or send the editor draft before moving");
   const sourceSessionId = ctx.sessionManager.getSessionId();
   const leaf = ctx.sessionManager.getLeafId();
-  const sourcePane = required(
-    (await run(["pane", "current", "--current"], signal)).pane?.pane_id,
-    "current pane",
-  );
-  const info = (await run(["pane", "process-info", "--pane", sourcePane], signal)).process_info;
-  if (!info?.shell_pid || !info.foreground_processes?.some((p) => p.pid === options.sourcePid)) {
-    throw new Error("The caller Pi is not in the expected pane; source was not changed");
-  }
+  const sourcePane = await runtime.current(signal);
+  await runtime.verify(sourcePane, options.sourcePid, signal);
   await mkdir(join(options.agentDir, "session-moves"), { recursive: true, mode: 0o700 });
   const root = await realpath(join(options.agentDir, "session-moves"));
   const directory = await mkdtemp(join(root, "move-"));
   let targetPane: string | undefined;
   try {
-    const opened = await run(
-      [
-        "workspace",
-        "create",
-        "--cwd",
-        cwd,
-        "--label",
-        basename(cwd),
-        "--env",
-        "PI_CODING_AGENT_DIR=" + options.agentDir,
-        "--no-focus",
-      ],
-      signal,
-    );
-    targetPane = required(opened.root_pane?.pane_id, "dedicated target pane");
     const copy = await snapshotSession(ctx.sessionManager, cwd);
-    const record: MoveRecord = {
+    const record = {
+      backend: runtime.kind,
       directory,
       cwd,
       sourcePid: options.sourcePid,
       sourcePane,
       sourceSessionId,
       sourceSessionFile,
-      targetPane,
+      targetPane: "",
       targetSessionId: copy.id,
       targetSessionFile: copy.file,
       resume: options.resume ?? false,
     };
     const handoff = join(directory, "move.json");
-    await writeFile(handoff, JSON.stringify(record) + "\n", { mode: 0o600, flag: "wx" });
-    await run(
-      [
-        "agent",
-        "start",
-        "move-" + basename(directory).slice(5).toLowerCase(),
-        "--kind",
-        "pi",
-        "--pane",
-        targetPane,
-        "--timeout",
-        "30000",
-        "--",
-        "--extension",
-        options.extension,
-        "--session",
-        copy.file,
-        "--session-move-handoff",
-        handoff,
-      ],
+    await runtime.launch(
+      options.agentDir,
+      ["--extension", options.extension, "--session", copy.file, "--session-move-handoff", handoff],
+      async (terminal) => {
+        targetPane = terminal;
+        record.targetPane = terminal;
+        await marker(directory, "move", record);
+      },
       signal,
     );
     const deadline = Date.now() + (options.timeout ?? 30_000);
@@ -208,11 +162,7 @@ export async function relocate(
     ) {
       throw new Error("Replacement did not acknowledge the expected session and directory");
     }
-    const targetInfo = (await run(["pane", "process-info", "--pane", targetPane], signal))
-      .process_info;
-    if (!targetInfo?.foreground_processes?.some((p) => p.pid === ready!.pid)) {
-      throw new Error("Replacement process identity did not match its acknowledgment");
-    }
+    await runtime.verify(record.targetPane, ready.pid, signal);
     const checkSource = () => {
       signal?.throwIfAborted();
       if (

@@ -1,6 +1,10 @@
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
+  test: {
+    environment: "node",
+    include: ["**/*.test.ts"],
+  },
   lint: {
     ignorePatterns: ["node_modules/**", "**/node_modules/**"],
     options: {

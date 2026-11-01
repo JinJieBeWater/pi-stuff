@@ -26,7 +26,7 @@ const env: NodeJS.ProcessEnv = {
   HERDR_CONFIG_PATH: join(root, "herdr.toml"),
 };
 for (const key of Object.keys(env))
-  if (key.startsWith("HERDR_") && key !== "HERDR_CONFIG_PATH")
+  if ((key.startsWith("HERDR_") && key !== "HERDR_CONFIG_PATH") || key.startsWith("HC_"))
     delete (env as Record<string, string | undefined>)[key];
 process.env.PI_CODING_AGENT_DIR = agentDir;
 await writeFile(
@@ -95,6 +95,7 @@ try {
   const rows: Record<string, unknown>[] = [];
   for (const kind of [
     "cross-repo",
+    "moved-pane",
     "non-git spaces ; dollar$",
     "missing-source",
     "existing-worktree",
@@ -163,7 +164,7 @@ try {
       "--env",
       "PI_CODING_AGENT_DIR=" + agentDir,
     ]);
-    const pane = created.root_pane.pane_id;
+    let pane = created.root_pane.pane_id;
     const sibling = (
       await h(["pane", "split", pane, "--direction", "down", "--cwd", old, "--no-focus"])
     ).pane;
@@ -192,6 +193,10 @@ try {
       sourceFile,
     ]);
     assert.ok(native);
+    if (kind === "moved-pane") {
+      pane = (await h(["pane", "move", pane, "--new-workspace", "--no-focus"])).move_result.pane
+        .pane_id;
+    }
     const sourceBefore = await readFile(sourceFile, "utf8");
     if (kind === "missing-source") await rm(old, { recursive: true });
     if (kind === "tool-lifecycle") {

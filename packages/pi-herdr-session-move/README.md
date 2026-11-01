@@ -6,7 +6,7 @@
 
 随[仓库 Git package](../../README.md#安装)安装，入口为 `packages/pi-herdr-session-move/index.ts`。可用 `pi config` 单独停用；更新和卸载方式见仓库说明。
 
-另需独立安装 Herdr，只在 Herdr 环境中注册。兼容范围见[开发基线](../../docs/development.md#兼容基线)。
+另需独立安装 Herdr Core（`hc`）或旧 Herdr TUI（`herdr`）。Core 的 `HC_TERMINAL_SOCKET` 优先，须有完整的 `HC_TERMINAL_ID`；旧 TUI 使用 `HERDR_ENV=1`、`HERDR_PANE_ID` 和 `HERDR_SOCKET_PATH`。兼容范围见[开发基线](../../docs/development.md#兼容基线)。
 
 ## 使用
 
@@ -20,8 +20,9 @@
 
 - 迁移的是持久化对话：保留当前选中的树分支、其他分支和来源关系，原会话文件留在原处。
 - TS notebook、扩展内存、临时 CLI flags 和后台进程不随会话搬迁；目标项目使用自己的配置和 trust。
-- 每次创建不抢焦点的专用 workspace/pane，只处理当前 Pi；代码、Git 分支、worktree 和源目录保持原样。
-- 原 Pi 退出后保留空 shell。已验证的 Herdr 接口无法按预期 occupant 原子关闭 pane，自动清理仍有误关新程序的窗口。
+- 每次使用专用目标位置，只处理当前 Pi；代码、Git 分支、worktree 和源目录保持原样。旧 TUI 创建不抢焦点的 workspace/pane；Core 创建可独立存活的终端，并携带新 space/tab 标签供连接该 Core 的 App 展示，未启动 App 时仍可搬迁。
+- Core 目标会等待源端发布包含准确终端地址的私有交接记录；确认会话和目标进程后才允许源 Pi 退出，目标不会随源端退出而被回收。
+- 源终端保留。旧 TUI 中原 Pi 退出后留下 shell；Core 中若 Pi 是终端主进程，则留下已结束的终端记录。自动关闭源终端仍有误关新程序的窗口。
 
 ## 开发
 

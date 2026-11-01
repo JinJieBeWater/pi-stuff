@@ -1,40 +1,55 @@
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { realpath, stat } from "node:fs/promises";
-import { dirname, isAbsolute, join } from "node:path";
+import { basename, dirname, isAbsolute, join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
-import {
-  marker,
-  processAlive,
-  readJson,
-  type MoveRecord,
-  type Ready,
-  type RunHerdr,
-} from "./move.ts";
+import { marker, processAlive, readJson, type MoveRecord, type Ready } from "./move.ts";
+import type { MoveRuntime } from "./runtime.ts";
 
 export async function acceptHandoff(
   ctx: Pick<ExtensionContext, "cwd" | "sessionManager">,
   handoff: string,
   agentDir: string,
-  run: RunHerdr,
+  runtime: MoveRuntime,
   pid: number,
+  signal?: AbortSignal,
 ): Promise<MoveRecord> {
   const root = await realpath(join(agentDir, "session-moves"));
-  const file = await realpath(handoff);
-  const directory = dirname(file);
-  const info = await stat(file);
+  const directory = await realpath(dirname(handoff));
   const dirInfo = await stat(directory);
   if (
     dirname(directory) !== root ||
-    file !== join(directory, "move.json") ||
-    (info.mode & 0o077) !== 0 ||
+    basename(handoff) !== "move.json" ||
     (dirInfo.mode & 0o077) !== 0 ||
-    (process.getuid && (info.uid !== process.getuid() || dirInfo.uid !== process.getuid()))
+    (process.getuid && dirInfo.uid !== process.getuid())
   ) {
     throw new Error("Handoff must be a private record inside the Pi session-moves directory");
   }
+  const deadline = Date.now() + 30_000;
+  while (true) {
+    signal?.throwIfAborted();
+    try {
+      await stat(handoff);
+      break;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
+    if (await readJson(join(directory, "cancelled.json")))
+      throw new Error("Source cancelled the handoff before publishing its binding");
+    if (Date.now() >= deadline) throw new Error("Source did not publish the handoff binding");
+    await delay(25, undefined, { signal });
+  }
+  const file = await realpath(handoff);
+  const info = await stat(file);
+  if (
+    file !== join(directory, "move.json") ||
+    (info.mode & 0o077) !== 0 ||
+    (process.getuid && info.uid !== process.getuid())
+  )
+    throw new Error("Handoff must be a private record inside the Pi session-moves directory");
   const record = await readJson<MoveRecord>(file);
   if (
     !record ||
+    record.backend !== runtime.kind ||
     record.directory !== directory ||
     !isAbsolute(record.sourceSessionFile) ||
     !Number.isSafeInteger(record.sourcePid) ||
@@ -49,7 +64,7 @@ export async function acceptHandoff(
   ) {
     throw new Error("Handoff does not match this process, session, and directory");
   }
-  const pane = (await run(["pane", "current", "--current"])).pane?.pane_id;
+  const pane = await runtime.current(signal);
   if (pane !== record.targetPane || pane === record.sourcePane)
     throw new Error("Handoff target pane does not match");
   const ready: Ready = {

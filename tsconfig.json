@@ -1,3 +1,4 @@
 {
-  "extends": "@pi-stuff/config/tsconfig.base.json"
+  "extends": "@pi-stuff/config/tsconfig.base.json",
+  "include": ["vite.config.ts", "lib/**/*.ts", "test/**/*.ts"]
 }

@@ -11,8 +11,9 @@
 | [pi-lovely-mermaid](packages/pi-lovely-mermaid)         | 将 Mermaid 显示为跟随主题的终端字符图                 |
 | [pi-borderless-tables](packages/pi-borderless-tables)   | 无框对齐表格                                          |
 | [pi-herdr-session-move](packages/pi-herdr-session-move) | 把当前 Pi 对话转到另一个已有目录                      |
+| [pi-herdr-tab-title](packages/pi-herdr-tab-title)       | 在 Herdr Core/App 和旧 TUI 中同步 Pi 标签页名称       |
 | [pi-drop-session](packages/pi-drop-session)             | 新建会话后，将旧会话文件送到废纸篓                    |
-| [pi-context-policy](packages/pi-context-policy)         | Herdr 默认说明和可配置的提示词段落                    |
+| [pi-context-policy](packages/pi-context-policy)         | 按环境选择提示词、托管扩展、工具和 Skill              |
 | [pi-tool-exposure](packages/pi-tool-exposure)           | 按配置调整工具暴露，使用原生 package discovery 找入口 |
 | [pi-skill-discovery](packages/pi-skill-discovery)       | 配置核心目录并按需查找其他 Skills                     |
 
@@ -127,7 +128,7 @@ pi install git:github.com/JinJieBeWater/pi-stuff
 pi config
 ```
 
-默认发现上方七项扩展和 Pi 版 `show-me`，不安装自用清单中的第三方项目。`show-me` 的 Glyph kit/GlyphCSS 功能需要[单独安装依赖](skills/README.md#绘图依赖)。在 `pi config` 中关闭不需要的入口。已有会话执行 `/reload` 或重开。
+默认发现上方八项扩展和 Pi 版 `show-me`，不安装自用清单中的第三方项目。`show-me` 的 Glyph kit/GlyphCSS 功能需要[单独安装依赖](skills/README.md#绘图依赖)。在 `pi config` 中关闭不需要的入口。已有会话执行 `/reload` 或重开。
 
 不要同时加载这个 Git package 和相同扩展或 Skill 的本地入口，以免重复注册。
 
@@ -148,7 +149,8 @@ pi config
 ## 配置
 
 - [Mermaid](packages/pi-lovely-mermaid/README.md#配置)：启用前将 Pi 的 `markdown.mermaid` 设为 `off`，避免原生渲染先处理代码块。
-- [会话搬迁](packages/pi-herdr-session-move/README.md#使用)：需要独立安装 Herdr，只在 Herdr 中注册入口。
+- [会话搬迁](packages/pi-herdr-session-move/README.md#使用)：支持 Herdr Core 与旧 TUI，各自使用原生运行接口。
+- [标签页名称](packages/pi-herdr-tab-title/README.md)：Core 需有连接该终端的 Herdr App；旧 TUI 使用自身 socket。
 - [`/drop`](packages/pi-drop-session/README.md#使用)：需要可信的回收站命令，默认从 `PATH` 查找 `trash`。
 - [Skill 发现](packages/pi-skill-discovery/README.md#配置)：默认核心名单为空，所有可自动调用的 Skills 都按需查找；原生 `/skill:name` 仍可用。
 

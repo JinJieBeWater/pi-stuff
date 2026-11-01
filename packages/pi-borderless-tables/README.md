@@ -39,7 +39,7 @@ UI    进行中  检查移动端布局和键盘操作
 通用命令见[开发指南](../../docs/development.md#验证)。彩色渲染测试可在本包目录补充运行：
 
 ```sh
-FORCE_COLOR=3 bun test
+FORCE_COLOR=3 bun run test
 ```
 
 测试通过公开 `registerMarkdownTransformer`、真实 Pi `Markdown` 和 `AssistantMessageComponent`，覆盖 40/80/120 列、双向 resize、表头粗线与数据行细线、左右及居中对齐、中英 emoji、空值、行内格式/空格/标点/转义的渲染等价、内容中的框线字符、可点击链接、错列回退、相邻块边界、Mermaid/chart 混排、逐字符流式输入时样式稳定且单元格内容保留、宿主去除末尾空白、结束态一致、消息类型、dark/light。

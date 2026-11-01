@@ -1,4 +1,4 @@
-import { expect, test } from "bun:test";
+import { expect, test } from "vite-plus/test";
 import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -89,10 +89,10 @@ test("registration wrapper preserves implementation and upstream-managed exposur
     const { pi, tools } = collector();
     const original = definition("target");
     withExposure(pi, { target: requested }).registerTool(original);
-    expect(tools[0].exposure).toBe(requested);
-    expect(tools[0].execute).toBe(original.execute);
-    expect(tools[0].parameters).toBe(original.parameters);
-    expect(tools[0].renderCall).toBe(original.renderCall);
+    expect(tools[0]!.exposure).toBe(requested);
+    expect(tools[0]!.execute).toBe(original.execute);
+    expect(tools[0]!.parameters).toBe(original.parameters);
+    expect(tools[0]!.renderCall).toBe(original.renderCall);
   }
   for (const upstream of ["deferred", "hidden", "codemode", "model-only"]) {
     const { pi, tools } = collector();
@@ -106,18 +106,14 @@ test("registration wrapper preserves implementation and upstream-managed exposur
   expect(tools[0]).toBe(original);
 });
 
-test("one factory can update its tools while different factories still cannot collide", () => {
+test("one factory can update its tools without losing the exposure policy", () => {
   const { pi, tools } = collector();
-  const owners = new Map<string, symbol>();
-  const first = withExposure(pi, { fixture_tool: "deferred" }, owners);
+  const first = withExposure(pi, { fixture_tool: "deferred" });
   first.registerTool(definition("fixture_tool"));
   const updated = { ...definition("fixture_tool"), description: "updated schema" };
   first.registerTool(updated);
-  expect(tools[1].description).toBe("updated schema");
-  expect(tools[1].exposure).toBe("deferred");
-  expect(() => withExposure(pi, { fixture_tool: "direct" }, owners).registerTool(updated)).toThrow(
-    "duplicate adapted tool",
-  );
+  expect(tools[1]!.description).toBe("updated schema");
+  expect(tools[1]!.exposure).toBe("deferred");
 });
 
 test("native package discovery follows manifest entries without configured source-file paths", async () => {
@@ -145,7 +141,7 @@ test("native package discovery follows manifest entries without configured sourc
     );
     const second = collector();
     await registerAdapters(second.pi, config(source), directory);
-    expect(second.tools[0].exposure).toBe("deferred");
+    expect(second.tools[0]!.exposure).toBe("deferred");
     expect(await readFile(join(directory, "settings.json"), "utf8")).toBe(settings);
   });
 });

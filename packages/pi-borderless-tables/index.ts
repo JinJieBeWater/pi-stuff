@@ -39,14 +39,13 @@ function renderTable(
   const lines = table.raw.replace(/\n+$/, "").split("\n");
   // Marked pads missing cells and discards extra ones; validate its raw rows before trusting them.
   if (lines.length !== rows.length + 1 || table.raw.includes("\\|")) return table.raw;
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+  for (const [i, line] of lines.entries()) {
     const cells = line.trim().replace(/^\|/, "").replace(/\|$/, "").split("|");
     // Pi trims terminal newlines; only the streaming message's final row may lack cells.
     const partial = isStreaming && isLastToken && i === lines.length - 1 && i > 1;
     if (cells.length > columns || (cells.length < columns && !partial)) return table.raw;
     if (i === 1) continue;
-    const row = rows[i === 0 ? 0 : i - 1];
+    const row = rows[i === 0 ? 0 : i - 1]!;
     if (row.length !== columns || row.some((cell, j) => cell.text !== (cells[j]?.trim() ?? "")))
       return table.raw;
   }
@@ -61,7 +60,7 @@ function renderTable(
   if (!/^┌─+(?:┬─+)*┐$/.test(top)) return table.raw;
   const boundaries = Array.from(top.matchAll(/[┌┬┐]/g), (match) => match.index!);
   if (boundaries.length !== columns + 1) return table.raw;
-  const widths = boundaries.slice(0, -1).map((start, i) => boundaries[i + 1] - start - 3);
+  const widths = boundaries.slice(0, -1).map((start, i) => boundaries[i + 1]! - start - 3);
   const output: string[] = [];
   let headerRule = false;
   for (const line of layout.slice(1)) {
@@ -77,7 +76,7 @@ function renderTable(
       return table.raw;
     // Consume boundary-closing ANSI along with the native right padding, then drop that space.
     const cells = widths.map((width, i) => {
-      const cell = sliceByColumn(line, boundaries[i] + 2, width + 1).replace(/ $/, "");
+      const cell = sliceByColumn(line, boundaries[i]! + 2, width + 1).replace(/ $/, "");
       const padding = Math.max(
         0,
         width - visibleWidth(stripTerminalSequences(cell).replace(/ +$/, "")),

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, test } from "bun:test";
+import { afterEach, beforeEach, expect, test } from "vite-plus/test";
 import type { ExtensionAPI, ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { execFileSync } from "node:child_process";
 import {
@@ -160,7 +160,7 @@ test.each(["missing", "not executable", "directory"])(
     expect(state.switches()).toBe(0);
     expect(state.calls).toHaveLength(0);
     expect(state.notices[0]).toMatchObject({ context: "old", level: "error" });
-    expect(state.notices[0].text).toContain("not executable");
+    expect(state.notices[0]!.text).toContain("not executable");
     expect(existsSync(oldFile)).toBe(true);
   },
 );
@@ -173,7 +173,7 @@ test("PATH lookup skips a nonexecutable candidate and invokes the checked absolu
   const command = executable();
   const state = setup();
   await state.invoke();
-  expect(state.calls[0][0]).toBe(command);
+  expect(state.calls[0]![0]).toBe(command);
 });
 
 test.each([undefined, ""])("PATH=%j never guesses the current directory", async (path) => {
@@ -185,7 +185,7 @@ test.each([undefined, ""])("PATH=%j never guesses the current directory", async 
   expect(state.switches()).toBe(0);
   expect(state.calls).toHaveLength(0);
   expect(state.notices[0]).toMatchObject({ context: "old", level: "error" });
-  expect(state.notices[0].text).toContain("PATH is unset or empty");
+  expect(state.notices[0]!.text).toContain("PATH is unset or empty");
   expect(existsSync(oldFile)).toBe(true);
 });
 
@@ -195,7 +195,7 @@ test("an explicit executable path works without PATH", async () => {
   delete process.env.PATH;
   const state = setup();
   await state.invoke();
-  expect(state.calls[0][0]).toBe(command);
+  expect(state.calls[0]![0]).toBe(command);
 });
 
 test("an explicit empty entry in a nonempty PATH still searches the current directory", async () => {
@@ -203,7 +203,7 @@ test("an explicit empty entry in a nonempty PATH still searches the current dire
   process.env.PATH = `${join(directory, "missing")}:`;
   const state = setup();
   await state.invoke();
-  expect(state.calls[0][0]).toBe(command);
+  expect(state.calls[0]![0]).toBe(command);
 });
 
 test("relative executable with spaces, prefix argv and leading-dash session paths stay literal", async () => {
@@ -223,7 +223,7 @@ test("an in-memory session does not start a new session or require trash", async
   const state = setup({ sessionFile: null });
   await state.invoke();
   expect(state.switches()).toBe(0);
-  expect(state.notices[0].level).toBe("warning");
+  expect(state.notices[0]!.level).toBe("warning");
 });
 
 test("cancelling creation keeps the old session and never runs trash", async () => {
@@ -252,9 +252,9 @@ test("command failure uses the fresh context and gives recovery instructions wit
   });
   await state.invoke();
   expect(state.notices[0]).toMatchObject({ context: "fresh", level: "error" });
-  expect(state.notices[0].text).toContain("fixture failure");
-  expect(state.notices[0].text).toContain("/resume");
-  expect(state.notices[0].text).toContain(oldFile);
+  expect(state.notices[0]!.text).toContain("fixture failure");
+  expect(state.notices[0]!.text).toContain("/resume");
+  expect(state.notices[0]!.text).toContain(oldFile);
   expect(existsSync(oldFile)).toBe(true);
 });
 
@@ -273,8 +273,8 @@ test.each(["already absent", "moved before failure"])(
     expect(state.switches()).toBe(1);
     expect(state.calls).toHaveLength(1);
     expect(state.notices[0]).toMatchObject({ context: "fresh", level: "info" });
-    expect(state.notices[0].text).toContain("already absent");
-    expect(state.notices[0].text).not.toContain("/resume");
+    expect(state.notices[0]!.text).toContain("already absent");
+    expect(state.notices[0]!.text).not.toContain("/resume");
     expect(existsSync(oldFile)).toBe(false);
   },
 );
@@ -318,7 +318,7 @@ test("a UTF-8 BOM is accepted without losing configuration values", async () => 
   writeFileSync(join(directory, "pi-drop-session.json"), '\uFEFF{"timeoutMs":42}');
   const state = setup();
   await state.invoke();
-  expect(state.calls[0][2]).toBe(42);
+  expect(state.calls[0]![2]).toBe(42);
 });
 
 test.each([1, 60_000])("timeout limit %i is accepted", async (timeoutMs) => {
@@ -326,7 +326,7 @@ test.each([1, 60_000])("timeout limit %i is accepted", async (timeoutMs) => {
   configure({ timeoutMs });
   const state = setup();
   await state.invoke();
-  expect(state.calls[0][2]).toBe(timeoutMs);
+  expect(state.calls[0]![2]).toBe(timeoutMs);
 });
 
 function script(body: string) {
@@ -363,8 +363,8 @@ test("a real nonzero subprocess preserves the old fixture and reports stderr", a
   const state = setup({ real: true });
   await state.invoke();
   expect(state.notices[0]).toMatchObject({ context: "fresh", level: "error" });
-  expect(state.notices[0].text).toContain("fixture child failed");
-  expect(state.notices[0].text).toContain("/resume");
+  expect(state.notices[0]!.text).toContain("fixture child failed");
+  expect(state.notices[0]!.text).toContain("/resume");
   expect(existsSync(oldFile)).toBe(true);
 });
 
@@ -375,7 +375,7 @@ test("a real subprocess times out without a delete fallback", async () => {
   await state.invoke();
   expect(Date.now() - started).toBeLessThan(3000);
   expect(state.notices[0]).toMatchObject({ context: "fresh", level: "error" });
-  expect(state.notices[0].text).toContain("/resume");
+  expect(state.notices[0]!.text).toContain("/resume");
   expect(existsSync(oldFile)).toBe(true);
 });
 
@@ -414,7 +414,7 @@ test("timeout forcibly stops a Node process that ignores SIGTERM", async () => {
     ]);
     expect(existsSync(pidFile)).toBe(true);
     expect(state.notices[0]).toMatchObject({ context: "fresh", level: "error" });
-    expect(state.notices[0].text).toContain("/resume");
+    expect(state.notices[0]!.text).toContain("/resume");
     expect(readFileSync(oldFile, "utf8")).toBe("fixture session");
   } finally {
     clearTimeout(guard);

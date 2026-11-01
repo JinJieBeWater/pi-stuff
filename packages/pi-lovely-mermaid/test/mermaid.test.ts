@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, test } from "bun:test";
+import { afterEach, beforeEach, expect, test } from "vite-plus/test";
 import type {
   ExtensionAPI,
   ExtensionContext,
@@ -125,7 +125,7 @@ test("links only node labels and respects terminal hyperlink capabilities", () =
   setCapabilities({ images: null, trueColor: true, hyperlinks: true });
   const linked = harness.render(source);
   expect(linked.split(opener)).toHaveLength(2);
-  const label = linked.split(opener)[1].split("\x1b]8;;\x1b\\")[0];
+  const label = linked.split(opener)[1]!.split("\x1b]8;;\x1b\\")[0]!;
   expect(stripTerminalSequences(label)).toBe("Docs");
 
   setCapabilities({ images: null, trueColor: true, hyperlinks: false });

@@ -6,40 +6,17 @@ import {
 import { Type } from "typebox";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { canonicalTarget, readJson, relocate, type RunHerdr } from "./move.ts";
+import { canonicalTarget, readJson, relocate } from "./move.ts";
 import { acceptHandoff, finishHandoff } from "./receiver.ts";
+import { createRuntime } from "./runtime.ts";
 
 export default function sessionMove(pi: ExtensionAPI) {
-  if (process.env.HERDR_ENV !== "1") return;
+  if (!createRuntime(pi.exec, process.cwd())) return;
   const lifetime = new AbortController();
   let staged: { cwd: string; signal?: AbortSignal } | undefined;
   let moving = false;
   let receiving = false;
   let handedOff = false;
-
-  const runIn =
-    (cwd: string): RunHerdr =>
-    async (args, signal) => {
-      const result = await pi.exec("herdr", args, {
-        cwd,
-        signal,
-        timeout: args[0] === "agent" && args[1] === "start" ? 35_000 : 10_000,
-      });
-      signal?.throwIfAborted();
-      if (result.killed)
-        throw new Error("Herdr command timed out; inspect live state before retrying");
-      const raw = result.stdout.trim() || result.stderr.trim();
-      let envelope;
-      try {
-        envelope = JSON.parse(raw);
-      } catch {
-        throw new Error("Herdr returned invalid JSON: " + raw.slice(0, 500));
-      }
-      if (result.code !== 0 || envelope.error || !envelope.result) {
-        throw new Error(envelope.error?.message || raw.slice(0, 500));
-      }
-      return envelope.result;
-    };
 
   const perform = async (
     ctx: ExtensionContext,
@@ -53,7 +30,7 @@ export default function sessionMove(pi: ExtensionAPI) {
       if (ctx.ui.getEditorText().trim())
         throw new Error("Keep or send the editor draft before moving");
       const record = await relocate(ctx, cwd, {
-        run: runIn(cwd),
+        runtime: createRuntime(pi.exec, cwd)!,
         agentDir: getAgentDir(),
         extension: fileURLToPath(import.meta.url),
         sourcePid: process.pid,
@@ -173,7 +150,14 @@ export default function sessionMove(pi: ExtensionAPI) {
       return;
     receiving = true;
     try {
-      const record = await acceptHandoff(ctx, handoff, getAgentDir(), runIn(ctx.cwd), process.pid);
+      const record = await acceptHandoff(
+        ctx,
+        handoff,
+        getAgentDir(),
+        createRuntime(pi.exec, ctx.cwd)!,
+        process.pid,
+        lifetime.signal,
+      );
       const leaf = ctx.sessionManager.getLeafId();
       const checkTarget = () => {
         lifetime.signal.throwIfAborted();
@@ -201,7 +185,7 @@ export default function sessionMove(pi: ExtensionAPI) {
           }
           checkTarget();
           ctx.ui.notify(
-            `Session is now in ${record.cwd}; the old pane ${record.sourcePane} is retained as a shell`,
+            `Session is now in ${record.cwd}; source terminal ${record.sourcePane} was retained`,
             "info",
           );
           if (record.resume)

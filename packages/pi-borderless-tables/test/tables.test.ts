@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, test } from "bun:test";
+import { afterEach, beforeEach, expect, test } from "vite-plus/test";
 import {
   AssistantMessageComponent,
   getMarkdownTheme,
@@ -37,7 +37,7 @@ function setup() {
       transform = handler;
     },
   } as ExtensionAPI);
-  expect(transform).toBeFunction();
+  expect(transform).toBeTypeOf("function");
   return (source: string, context: Partial<MarkdownTransformContext> = {}) =>
     transform!(source, {
       messageType: "assistant",
@@ -81,9 +81,9 @@ test("40, 80 and 120 columns use a heavy header rule and thin data rules without
     expect(lines.join("\n")).not.toMatch(/[┌┐└┘├┤┬┴┼│]/);
     const rules = lines.filter((line) => /^[━─ ]+$/.test(line) && /[━─]/.test(line));
     expect(rules).toHaveLength(2);
-    expect(rules[0].trimEnd()).toMatch(/^━+(?:  ━+)*$/);
-    expect(rules[1]).toBe(rules[0].replaceAll("━", "─"));
-    expect(rules[0].trimEnd().split("  ")).toHaveLength(3);
+    expect(rules[0]!.trimEnd()).toMatch(/^━+(?:  ━+)*$/);
+    expect(rules[1]).toBe(rules[0]!.replaceAll("━", "─"));
+    expect(rules[0]!.trimEnd().split("  ")).toHaveLength(3);
     const content = lines.filter((line) => line.trim());
     expect(content[0]).not.toMatch(/^[━─ ]+$/);
     expect(content.at(-1)).not.toMatch(/^[━─ ]+$/);
@@ -276,7 +276,7 @@ test.each(["dark", "light"])("aligned cells retain the next cell's %s theme colo
     const row = new Markdown(output, 0, 0, getMarkdownTheme())
       .render(80)
       .find((line) => stripTerminalSequences(line).includes("Y"))!;
-    const color = getMarkdownTheme().codeBlock("Y").split("Y")[0];
+    const color = getMarkdownTheme().codeBlock("Y").split("Y")[0]!;
     expect(row.slice(0, row.indexOf("Y")).endsWith(color)).toBe(true);
   }
 });
@@ -350,7 +350,7 @@ test("spaces, punctuation and Markdown escapes preserve Pi's actual cell text", 
   const transformed = setup()(source, { availableWidth: 300 });
   expect(transformed).not.toBe(source);
   const originalRow = render(source, 300).find((line) => line.includes("API"))!;
-  const originalValue = originalRow.split("│")[2].trim();
+  const originalValue = originalRow.split("│")[2]!.trim();
   expect(originalValue).toContain("a  b");
   expect(originalValue).toContain("C:\\temp");
   expect(render(transformed, 300).join("\n")).toContain(originalValue);
@@ -386,8 +386,8 @@ test.each([
   const source = sample.replace("Mermaid", value);
   const transformed = setup()(source, { availableWidth: 500 });
   expect(transformed).not.toBe(source);
-  const originalRow = render(source, 500).filter((line) => line.startsWith("│"))[1];
-  const originalValue = originalRow.split("│")[1].trim();
+  const originalRow = render(source, 500).filter((line) => line.startsWith("│"))[1]!;
+  const originalValue = originalRow.split("│")[1]!.trim();
   expect(render(transformed, 500).join("\n")).toContain(originalValue);
 });
 

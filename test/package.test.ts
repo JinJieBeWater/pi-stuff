@@ -1,10 +1,11 @@
-import { expect, test } from "bun:test";
+import { expect, test } from "vite-plus/test";
 import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   DefaultPackageManager,
+  DefaultResourceLoader,
   loadSkillsFromDir,
   SettingsManager,
 } from "@earendil-works/pi-coding-agent";
@@ -118,6 +119,36 @@ test("native Pi discovery finds the bundle and narrows resources without loading
         .map((entry) => entry.path),
     ).toEqual([join(root, skill)]);
   } finally {
+    await rm(directory, { recursive: true });
+  }
+});
+
+test("the Node host loads every declared extension through Pi's native loader", async () => {
+  expect(process.versions.bun).toBeUndefined();
+  const directory = await mkdtemp(join(tmpdir(), "pi-extension-load-"));
+  const originalAgentDir = process.env.PI_CODING_AGENT_DIR;
+  process.env.PI_CODING_AGENT_DIR = directory;
+  try {
+    const loader = new DefaultResourceLoader({
+      cwd: directory,
+      agentDir: directory,
+      settingsManager: SettingsManager.inMemory({ packages: [] }),
+      additionalExtensionPaths: manifest.pi.extensions.map((entry: string) => resolve(root, entry)),
+      noExtensions: true,
+      noSkills: true,
+      noThemes: true,
+      noContextFiles: true,
+      noPromptTemplates: true,
+    });
+    await loader.reload();
+    const { extensions, errors } = loader.getExtensions();
+    expect(errors).toEqual([]);
+    expect(extensions.map(({ path }) => path).toSorted()).toEqual(
+      manifest.pi.extensions.map((entry: string) => resolve(root, entry)).toSorted(),
+    );
+  } finally {
+    if (originalAgentDir === undefined) delete process.env.PI_CODING_AGENT_DIR;
+    else process.env.PI_CODING_AGENT_DIR = originalAgentDir;
     await rm(directory, { recursive: true });
   }
 });

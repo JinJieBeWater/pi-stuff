@@ -6,9 +6,9 @@
 
 ## 1. 定位本次记录
 
-从错误中取得记录目录；默认位于 `$PI_CODING_AGENT_DIR/session-moves/`，未设置该变量时在 `~/.pi/agent/session-moves/`。读取 `move.json`，记下 `sourcePane`、`sourcePid`、`sourceSessionFile`、`targetPane`、`targetSessionFile` 和目标 `cwd`。
+从错误中取得记录目录；默认位于 `$PI_CODING_AGENT_DIR/session-moves/`，未设置该变量时在 `~/.pi/agent/session-moves/`。读取 `move.json`，记下 `backend`、`sourcePane`、`sourcePid`、`sourceSessionFile`、`targetPane`、`targetSessionFile` 和目标 `cwd`。`sourcePane` / `targetPane` 在 Core 中保存 `t…` 地址，在旧 TUI 中保存 pane ID。
 
-这些身份必须与本次请求匹配。没有 `move.json`、记录损坏或无法确定哪次请求时，保留源端，列出 Herdr 中可能已创建的 workspace/pane 核实；仍不确定就报告记录路径与原错误，停止自动重试。
+这些身份必须与本次请求匹配。没有 `move.json`、记录损坏或无法确定哪次请求时，保留源端；Core 用 `hc ls` 核实可能已创建的终端，旧 TUI 核实 workspace/pane。Core 启动目标与发布记录之间可能中断，此时目标不会自动续跑。仍不确定就报告记录路径与原错误，停止自动重试。
 
 ## 2. 核对记录与现场
 
@@ -19,7 +19,7 @@
 | `completed.json` | 接收端已通过源 PID 退出和上下文检查；后续检查仍可能阻止自动续跑 |
 | `cancelled.json` | 此次交接已取消；它可以与 `committed.json` 同时存在，按取消处理  |
 
-用 Herdr 的 `agent get` 和 `pane process-info` 核对两端当前会话、进程与 cwd，并检查原 `sourcePid` 是否仍存在。pane 或 PID 已复用时，把新 occupant 当作无关进程保留；标记不能替代当前身份检查。
+按记录的运行时核对现场：Core 使用 `hc get <terminal>` 检查两端地址、live/finished、`foreground.pid` 和 cwd；旧 TUI 使用 `herdr agent get` 和 `herdr pane process-info`。同时检查原 `sourcePid` 是否仍存在。终端内程序或 PID 已变化时，把新 occupant 当作无关进程保留；标记不能替代当前身份检查。
 
 将两端分别判为“本次 Pi 仍在”“本次 Pi 已退出”或“无法确认”。任何一端无法确认时，停在诊断，不启动另一份任务。
 

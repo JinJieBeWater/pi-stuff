@@ -25,7 +25,7 @@ function themedLines(art: MermaidArt): string[] {
   const markdownTheme = getMarkdownTheme();
   const selectTheme = getSelectListTheme();
   const foreground = (colorize: (text: string) => string) =>
-    colorize("\0").split("\0", 1)[0].slice(2, -1);
+    colorize("\0").split("\0", 1)[0]!.slice(2, -1);
   const hyperlinks = getCapabilities().hyperlinks;
   const displayArt: MermaidArt = {
     ...art,

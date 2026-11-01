@@ -1,4 +1,4 @@
-import { expect, test } from "bun:test";
+import { expect, test } from "vite-plus/test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -27,34 +27,68 @@ function harness(value: unknown, env: NodeJS.ProcessEnv = {}) {
 test("outside Herdr, disabled and empty policies do nothing", () => {
   expect(harness({})({ existing: "keep" })).toEqual({ existing: "keep" });
   expect(harness({ enabled: false, sections: [{ id: "x", text: "unused" }] })()).toEqual({});
-  const env = { HERDR_ENV: "1", HERDR_PANE_ID: "fixture" };
-  expect(harness({ enabled: false }, env)()).toEqual({});
-  expect(harness({ sections: [] }, env)()).toEqual({});
+  for (const env of [
+    { HERDR_ENV: "1", HERDR_PANE_ID: "fixture" },
+    { HC_TERMINAL_ID: "fixture", HC_TERMINAL_SOCKET: "/fixture/core.sock" },
+  ]) {
+    expect(harness({ enabled: false }, env)()).toEqual({});
+    expect(harness({ sections: [] }, env)()).toEqual({});
+  }
 });
 
-test("defaults describe Herdr and Shepherdr only when both environment conditions match", () => {
+test("legacy defaults require both environment conditions and preserve native sections", () => {
   for (const flag of [undefined, "0", "1"])
     for (const pane of [undefined, "", "fixture"]) {
       const result = harness({}, { HERDR_ENV: flag, HERDR_PANE_ID: pane })({ herdr: "native" });
       expect(result.herdr).toBe("native");
-      if (flag === "1" && pane)
-        expect(result["context-policy-herdr"]).toBe(
-          "你当前运行在 Herdr 中，自动识别可以并发的任务，通过 Shepherdr 进行并发。",
-        );
-      else expect(result["context-policy-herdr"]).toBeUndefined();
+      expect(Object.keys(result)).toEqual(
+        flag === "1" && pane ? ["herdr", "context-policy-herdr-tui"] : ["herdr"],
+      );
     }
+});
+
+test("Core defaults require both terminal identity and socket", () => {
+  for (const terminal of [undefined, "", "fixture"])
+    for (const socket of [undefined, "", "/fixture/core.sock"]) {
+      const result = harness({}, { HC_TERMINAL_ID: terminal, HC_TERMINAL_SOCKET: socket })();
+      expect(Object.keys(result)).toEqual(terminal && socket ? ["context-policy-herdr-core"] : []);
+    }
+});
+
+test("Core takes precedence over inherited legacy markers on each turn", () => {
+  const env: NodeJS.ProcessEnv = {
+    HC_TERMINAL_ID: "fixture",
+    HC_TERMINAL_SOCKET: "/fixture/core.sock",
+    HERDR_ENV: "1",
+    HERDR_PANE_ID: "legacy",
+  };
+  const apply = harness({}, env);
+  expect(Object.keys(apply())).toEqual(["context-policy-herdr-core"]);
+  delete env.HC_TERMINAL_SOCKET;
+  expect(Object.keys(apply())).toEqual(["context-policy-herdr-tui"]);
 });
 
 test("configured sections use a private namespace, preserve other sections and are idempotent", () => {
   const apply = harness(
-    { sections: [{ id: "team", text: "Use the documented team conventions." }] },
-    { HERDR_ENV: "1", HERDR_PANE_ID: "fixture" },
+    {
+      sections: [
+        { id: "team", text: "Use the documented team conventions." },
+        { id: "second", text: "second configured section" },
+      ],
+    },
+    {
+      HERDR_ENV: "1",
+      HERDR_PANE_ID: "legacy",
+      HC_TERMINAL_ID: "fixture",
+      HC_TERMINAL_SOCKET: "/fixture/core.sock",
+    },
   );
   const sections = apply({ herdr: "host instructions", preamble: "native preamble" });
   expect(sections).toEqual({
     herdr: "host instructions",
     preamble: "native preamble",
     "context-policy-team": "Use the documented team conventions.",
+    "context-policy-second": "second configured section",
   });
   expect(apply(sections)).toEqual(sections);
 });
@@ -90,7 +124,7 @@ test("invalid shapes, unknown fields, duplicate ids and malformed conditions fai
     { sections: [{ id: "x", text: "" }] },
     { sections: [{ id: "x", text: "x", extra: 1 }] },
     { sections: [{ id: "x", text: "x", whenEnv: null }] },
-    { sections: [{ id: "x", text: "x", whenEnv: { FEATURE: false } }] },
+    { sections: [{ id: "x", text: "x", whenEnv: { FEATURE: 0 } }] },
     { sections: [{ id: "x", text: "x", whenEnv: { "bad=name": "1" } }] },
     {
       sections: [
@@ -103,6 +137,12 @@ test("invalid shapes, unknown fields, duplicate ids and malformed conditions fai
 });
 
 test("inherited object properties are not environment variables", () => {
+  expect(
+    harness(
+      {},
+      Object.create({ HC_TERMINAL_ID: "fixture", HC_TERMINAL_SOCKET: "/fixture/core.sock" }),
+    )(),
+  ).toEqual({});
   const apply = harness(
     { sections: [{ id: "own", text: "restricted", whenEnv: { constructor: true } }] },
     {},

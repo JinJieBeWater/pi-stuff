@@ -1,7 +1,8 @@
-import { afterEach, expect, test } from "bun:test";
+import { afterEach, expect, test } from "vite-plus/test";
 import { mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 import {
   createAgentSession,
   DefaultResourceLoader,
@@ -14,13 +15,22 @@ import { marker, readJson } from "../move.ts";
 
 const cleanups: (() => Promise<void>)[] = [];
 const originalAgentDir = process.env.PI_CODING_AGENT_DIR;
-const originalHerdrEnv = process.env.HERDR_ENV;
+const runtimeEnv = [
+  "HERDR_ENV",
+  "HERDR_PANE_ID",
+  "HERDR_SOCKET_PATH",
+  "HC_TERMINAL_ID",
+  "HC_TERMINAL_SOCKET",
+];
+const originalRuntimeEnv = Object.fromEntries(runtimeEnv.map((key) => [key, process.env[key]]));
 afterEach(async () => {
   for (const cleanup of cleanups.splice(0).reverse()) await cleanup();
   if (originalAgentDir === undefined) delete process.env.PI_CODING_AGENT_DIR;
   else process.env.PI_CODING_AGENT_DIR = originalAgentDir;
-  if (originalHerdrEnv === undefined) delete process.env.HERDR_ENV;
-  else process.env.HERDR_ENV = originalHerdrEnv;
+  for (const key of runtimeEnv) {
+    if (originalRuntimeEnv[key] === undefined) delete process.env[key];
+    else process.env[key] = originalRuntimeEnv[key];
+  }
 });
 async function temp() {
   const dir = await realpath(await mkdtemp(join(tmpdir(), "pi-move-lifecycle-")));
@@ -56,10 +66,18 @@ test("concurrent marker readers never observe an empty publication", async () =>
     );
 });
 
-async function receiverFixture() {
+async function receiverFixture(backend: "tui" | "core" = "tui") {
   const root = await temp();
   process.env.PI_CODING_AGENT_DIR = root;
-  process.env.HERDR_ENV = "1";
+  for (const key of runtimeEnv) delete process.env[key];
+  if (backend === "core") {
+    process.env.HC_TERMINAL_ID = "t2";
+    process.env.HC_TERMINAL_SOCKET = "/fixture/core.sock";
+  } else {
+    process.env.HERDR_ENV = "1";
+    process.env.HERDR_PANE_ID = "w2:p1";
+    process.env.HERDR_SOCKET_PATH = "/fixture/herdr.sock";
+  }
   const directory = join(root, "session-moves", "move-fixture");
   await mkdir(directory, { recursive: true, mode: 0o700 });
   const manager = SessionManager.create(root, join(root, "sessions"));
@@ -70,13 +88,14 @@ async function receiverFixture() {
   });
   manager.appendMessage({ role: "user", content: "preserved context", timestamp: 2 });
   const record = {
+    backend,
     directory,
     cwd: root,
     sourcePid: 2_000_000_000,
-    sourcePane: "w1:p1",
+    sourcePane: backend === "core" ? "t1" : "w1:p1",
     sourceSessionId: "source",
     sourceSessionFile: join(root, "source.jsonl"),
-    targetPane: "w2:p1",
+    targetPane: backend === "core" ? "t2" : "w2:p1",
     targetSessionId: manager.getSessionId(),
     targetSessionFile: manager.getSessionFile(),
     resume: true,
@@ -100,7 +119,11 @@ async function receiverFixture() {
           code: 0,
           killed: false,
           stderr: "",
-          stdout: JSON.stringify({ result: { pane: { pane_id: record.targetPane } } }),
+          stdout: JSON.stringify(
+            backend === "core"
+              ? { address: record.targetPane, state: "live" }
+              : { result: { pane: { pane_id: record.targetPane } } },
+          ),
         });
         pi.sendUserMessage = () => {
           resumed = true;
@@ -157,35 +180,40 @@ async function receiverFixture() {
   };
 }
 
-test("real Pi rejects tree navigation, switching and forking while receiving", async () => {
-  const f = await receiverFixture();
-  const leaf = f.manager.getLeafId();
-  expect((await f.session.navigateTree(f.first, { summarize: false })).cancelled).toBe(true);
-  expect(
-    (await f.session.extensionRunner.emit({ type: "session_before_switch", reason: "new" }))
-      ?.cancel,
-  ).toBe(true);
-  expect(
-    (
-      await f.session.extensionRunner.emit({
-        type: "session_before_fork",
-        entryId: f.first,
-        position: "at",
-      })
-    )?.cancel,
-  ).toBe(true);
-  expect(f.manager.getLeafId()).toBe(leaf);
-  await marker(f.directory, "committed", { pid: process.pid });
-  for (let i = 0; i < 30 && !f.resumed; i++) await Bun.sleep(10);
-  expect(f.resumed).toBe(true);
-  expect(f.manager.buildSessionContext().messages.length).toBe(2);
-});
+for (const backend of ["tui", "core"] as const) {
+  test(
+    backend + ": real Pi rejects tree navigation, switching and forking while receiving",
+    async () => {
+      const f = await receiverFixture(backend);
+      const leaf = f.manager.getLeafId();
+      expect((await f.session.navigateTree(f.first, { summarize: false })).cancelled).toBe(true);
+      expect(
+        (await f.session.extensionRunner.emit({ type: "session_before_switch", reason: "new" }))
+          ?.cancel,
+      ).toBe(true);
+      expect(
+        (
+          await f.session.extensionRunner.emit({
+            type: "session_before_fork",
+            entryId: f.first,
+            position: "at",
+          })
+        )?.cancel,
+      ).toBe(true);
+      expect(f.manager.getLeafId()).toBe(leaf);
+      await marker(f.directory, "committed", { pid: process.pid });
+      for (let i = 0; i < 30 && !f.resumed; i++) await delay(10);
+      expect(f.resumed).toBe(true);
+      expect(f.manager.buildSessionContext().messages.length).toBe(2);
+    },
+  );
+}
 
 test("out-of-band target branch drift refuses continuation and completion", async () => {
   const f = await receiverFixture();
   f.manager.branch(f.first);
   await marker(f.directory, "committed", { pid: process.pid });
-  await Bun.sleep(100);
+  await delay(100);
   expect(f.resumed).toBe(false);
   expect(await readJson(join(f.directory, "completed.json"))).toBeUndefined();
   expect(f.notices.some((s) => s.includes("changed"))).toBe(true);

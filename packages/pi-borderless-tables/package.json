@@ -8,14 +8,8 @@
   ],
   "type": "module",
   "scripts": {
-    "test": "bun test",
-    "check-types": "tsc --noEmit"
-  },
-  "devDependencies": {
-    "@earendil-works/pi-coding-agent": "1.4.0",
-    "@earendil-works/pi-tui": "1.4.0",
-    "@types/bun": "1.4.4",
-    "typescript": "7.0.2"
+    "test": "vp test run --config ../../vite.config.ts --dir .",
+    "check-types": "vp exec tsc"
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*",

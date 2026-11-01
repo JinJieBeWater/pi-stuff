@@ -4,7 +4,7 @@ import { accessSync, constants, readFileSync, statSync } from "node:fs";
 import { delimiter, join, resolve } from "node:path";
 import { promisify } from "node:util";
 
-type Config = { enabled: boolean; command: string[]; timeoutMs: number };
+type Config = { enabled: boolean; command: [string, ...string[]]; timeoutMs: number };
 
 function readConfig(agentDir: string): Config {
   const file = join(agentDir, "pi-drop-session.json");
@@ -53,7 +53,7 @@ function readConfig(agentDir: string): Config {
     return invalid("timeoutMs must be an integer from 1 to 60000");
   return {
     enabled: (config.enabled as boolean | undefined) ?? true,
-    command: (config.command as string[] | undefined) ?? ["trash"],
+    command: (config.command as Config["command"] | undefined) ?? ["trash"],
     timeoutMs: (config.timeoutMs as number | undefined) ?? 5000,
   };
 }
