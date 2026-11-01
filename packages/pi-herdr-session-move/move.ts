@@ -39,6 +39,21 @@ export type Ready = {
   sessionFile: string;
 };
 
+export function conversationLeaf(session: Context["sessionManager"]) {
+  // Background state advances the raw leaf without changing the conversation.
+  return (
+    session
+      .getBranch()
+      .findLast(
+        (entry) =>
+          entry.type !== "custom" &&
+          entry.type !== "session_info" &&
+          entry.type !== "label" &&
+          entry.type !== "usage",
+      )?.id ?? null
+  );
+}
+
 export async function canonicalTarget(cwd: string, current: string): Promise<string> {
   if (!isAbsolute(cwd)) throw new Error("cwd must be an absolute directory path");
   const target = await realpath(cwd);
@@ -110,7 +125,7 @@ export async function relocate(
   if (ctx.hasPendingMessages()) throw new Error("Queued messages must finish before moving");
   if (ctx.ui.getEditorText().trim()) throw new Error("Keep or send the editor draft before moving");
   const sourceSessionId = ctx.sessionManager.getSessionId();
-  const leaf = ctx.sessionManager.getLeafId();
+  const leaf = conversationLeaf(ctx.sessionManager);
   const sourcePane = await runtime.current(signal);
   await runtime.verify(sourcePane, options.sourcePid, signal);
   await mkdir(join(options.agentDir, "session-moves"), { recursive: true, mode: 0o700 });
@@ -167,7 +182,7 @@ export async function relocate(
       signal?.throwIfAborted();
       if (
         ctx.sessionManager.getSessionId() !== sourceSessionId ||
-        ctx.sessionManager.getLeafId() !== leaf ||
+        conversationLeaf(ctx.sessionManager) !== leaf ||
         ctx.hasPendingMessages() ||
         ctx.ui.getEditorText().trim()
       ) {

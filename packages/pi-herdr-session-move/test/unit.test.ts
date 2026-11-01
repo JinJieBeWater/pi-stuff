@@ -116,6 +116,17 @@ async function fakeTransfer(mode = "ready", backend: MoveRuntime["kind"] = "tui"
     if (mode === "ambiguous") throw new Error("start response lost");
     if (mode === "changed-source")
       f.session.appendMessage({ role: "user", content: "new message", timestamp: 3 });
+    if (mode === "extension-state") {
+      f.session.appendCustomEntry("auto-session-title-state-v2", { title: "updated title" });
+      f.session.appendSessionInfo("updated title");
+    }
+    if (mode === "custom-message")
+      f.session.appendCustomMessageEntry("new-context", "new context", false);
+    if (mode === "context-edit")
+      f.session.appendContextEdit(f.leaf, { content: "updated user task" });
+    if (mode === "model-change") f.session.appendModelChange("fixture", "other");
+    if (mode === "compaction") f.session.appendCompaction("new summary", f.leaf, 1);
+    if (mode === "branch-change") f.session.resetLeaf();
     if (mode === "new-draft") f.setDraft("unsent user input");
     if (mode !== "no-ack")
       await marker(record.directory, "ready", {
@@ -195,6 +206,11 @@ test("successful transfer requires an ACK and preserves source; no Git or focus 
 });
 
 for (const backend of ["tui", "core"] as const) {
+  test(backend + ": background extension state does not cancel a transfer", async () => {
+    const f = await fakeTransfer("extension-state", backend);
+    const record = await f.execute();
+    expect(await readFile(join(record.directory, "committed.json"), "utf8")).toBeTruthy();
+  });
   test(backend + ": transfer commits only after target identity and acknowledgment", async () => {
     const f = await fakeTransfer("ready", backend);
     const record = await f.execute();
@@ -208,6 +224,11 @@ for (const backend of ["tui", "core"] as const) {
     "wrong-pid",
     "ambiguous",
     "changed-source",
+    "custom-message",
+    "context-edit",
+    "model-change",
+    "compaction",
+    "branch-change",
     "new-draft",
     "aborted-after-start",
   ]) {

@@ -218,3 +218,13 @@ test("out-of-band target branch drift refuses continuation and completion", asyn
   expect(await readJson(join(f.directory, "completed.json"))).toBeUndefined();
   expect(f.notices.some((s) => s.includes("changed"))).toBe(true);
 });
+
+test("background extension state on the target does not stop continuation", async () => {
+  const f = await receiverFixture();
+  f.manager.appendCustomEntry("herdr-agents-monitor-state", { version: 1, agents: [] });
+  f.manager.appendSessionInfo("updated title");
+  await marker(f.directory, "committed", { pid: process.pid });
+  for (let i = 0; i < 30 && !f.resumed; i++) await delay(10);
+  expect(f.resumed).toBe(true);
+  expect(await readJson(join(f.directory, "completed.json"))).toBeTruthy();
+});

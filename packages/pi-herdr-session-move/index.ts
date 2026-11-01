@@ -6,7 +6,7 @@ import {
 import { Type } from "typebox";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { canonicalTarget, readJson, relocate } from "./move.ts";
+import { canonicalTarget, conversationLeaf, readJson, relocate } from "./move.ts";
 import { acceptHandoff, finishHandoff } from "./receiver.ts";
 import { createRuntime } from "./runtime.ts";
 
@@ -158,13 +158,13 @@ export default function sessionMove(pi: ExtensionAPI) {
         process.pid,
         lifetime.signal,
       );
-      const leaf = ctx.sessionManager.getLeafId();
+      const leaf = conversationLeaf(ctx.sessionManager);
       const checkTarget = () => {
         lifetime.signal.throwIfAborted();
         if (
           ctx.sessionManager.getSessionId() !== record.targetSessionId ||
           ctx.sessionManager.getSessionFile() !== record.targetSessionFile ||
-          ctx.sessionManager.getLeafId() !== leaf ||
+          conversationLeaf(ctx.sessionManager) !== leaf ||
           ctx.ui.getEditorText().trim() ||
           ctx.hasPendingMessages()
         ) {
