@@ -15,7 +15,7 @@
 
 angristan 集合中的具体条目：
 
-- 显示：`cached-line-resets`、`code-blocks`、`hyperlinks`；`accent-color` 已停用。
+- 显示：`cached-line-resets`、`code-blocks`；`accent-color`、`hyperlinks` 已停用。
 - 状态：`turn-stats`、`working-timer`。
 - 会话：`reload-all`。自动标题由本仓库的 [pi-auto-session-title](../packages/pi-auto-session-title/README.md) 维护，上游同名入口已停用；Herdr 标签页同步由 [pi-herdr-tab-title](../packages/pi-herdr-tab-title/README.md) 负责。
 

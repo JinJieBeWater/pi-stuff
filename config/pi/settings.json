@@ -47,7 +47,6 @@
         "extensions/code-blocks/index.ts",
         "extensions/reload-all/index.ts",
         "extensions/turn-stats/index.ts",
-        "extensions/hyperlinks/index.ts",
         "extensions/working-timer/index.ts"
       ],
       "source": "git:github.com/angristan/pi-extensions"
