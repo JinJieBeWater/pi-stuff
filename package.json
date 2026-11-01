@@ -52,6 +52,7 @@
       "./packages/pi-borderless-tables/index.ts",
       "./packages/pi-herdr-session-move/index.ts",
       "./packages/pi-herdr-tab-title/index.ts",
+      "./packages/pi-auto-session-title/index.ts",
       "./packages/pi-drop-session/index.ts",
       "./packages/pi-context-policy/index.ts",
       "./packages/pi-tool-exposure/index.ts",

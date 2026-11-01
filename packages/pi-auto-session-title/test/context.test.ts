@@ -1,0 +1,315 @@
+import { describe, expect, test } from "vite-plus/test";
+import {
+  buildTitleContext,
+  buildTitlePrompt,
+  createTitleState,
+  latestTitleState,
+  MAX_BOOTSTRAP_MESSAGE_CHARS,
+  MAX_BOOTSTRAP_PRIOR_TURNS,
+  MAX_CURRENT_ASSISTANT_CHARS,
+  MAX_CURRENT_USER_CHARS,
+  MAX_FOCUS_SUMMARY_CHARS,
+  MAX_TITLE_CONTEXT_CHARS,
+  parseTitleModelResponse,
+  redactEphemeralTitlePaths,
+  TITLE_STATE_TYPE,
+  titleStates,
+} from "../context";
+
+function stateEntry(index: number) {
+  return {
+    type: "custom",
+    customType: TITLE_STATE_TYPE,
+    data: {
+      version: 2,
+      focusSummary: `Focus ${index}`,
+      title: `Title ${index}`,
+      basedOnLeafId: `leaf-${index}`,
+      createdAt: `2026-07-16T00:00:${String(index).padStart(2, "0")}.000Z`,
+    },
+  };
+}
+
+describe("auto-session-title context", () => {
+  test("uses the original and latest branch focus with the current completed turn", () => {
+    const entries = [
+      ...Array.from({ length: 10 }, (_, index) => stateEntry(index)),
+      {
+        type: "message",
+        message: {
+          role: "user",
+          content: [{ type: "text", text: "Remove descriptions and dedupe snippets." }],
+        },
+      },
+      {
+        type: "message",
+        message: {
+          role: "assistant",
+          content: [
+            { type: "thinking", thinking: "hidden" },
+            { type: "toolCall", name: "edit" },
+          ],
+        },
+      },
+      {
+        type: "message",
+        message: {
+          role: "assistant",
+          content: [
+            {
+              type: "text",
+              text: "Updated the Mistral web-search extension and pushed the change.",
+            },
+          ],
+        },
+      },
+    ];
+    const context = buildTitleContext(entries);
+    expect(context.sessionAnchor).toBe("Focus 0");
+    expect(context.previousFocus).toBe("Focus 9");
+    expect(context.currentUserRequest).toBe("Remove descriptions and dedupe snippets.");
+    expect(context.currentAssistantOutcome).toBe(
+      "Updated the Mistral web-search extension and pushed the change.",
+    );
+    expect(latestTitleState(entries)?.title).toBe("Title 9");
+  });
+
+  test("keeps the original objective when recent state narrows to a component", () => {
+    const entries = [
+      {
+        type: "custom",
+        customType: TITLE_STATE_TYPE,
+        data: {
+          version: 2,
+          focusSummary: "Building Meridian, a self-hosted Obsidian vault synchronization system.",
+          title: "Meridian Sync",
+          createdAt: "2026-07-24T16:29:23.387Z",
+        },
+      },
+      {
+        type: "custom",
+        customType: TITLE_STATE_TYPE,
+        data: {
+          version: 2,
+          focusSummary: "Meridian's persistent WebSocket notification layer.",
+          title: "Notification Sessions",
+          createdAt: "2026-07-24T16:40:34.818Z",
+        },
+      },
+    ];
+    const context = buildTitleContext(entries);
+    expect(context.sessionAnchor).toBe(
+      "Building Meridian, a self-hosted Obsidian vault synchronization system.",
+    );
+    expect(context.previousFocus).toBe("Meridian's persistent WebSocket notification layer.");
+    expect(
+      JSON.parse(buildTitlePrompt("meridian", "Notification Sessions", context)),
+    ).toMatchObject({
+      session_anchor: "Building Meridian, a self-hosted Obsidian vault synchronization system.",
+      previous_focus: "Meridian's persistent WebSocket notification layer.",
+    });
+  });
+
+  test("makes a new request authoritative and keeps cwd metadata weak", () => {
+    const context = buildTitleContext([
+      {
+        type: "message",
+        message: {
+          role: "user",
+          content: "would this be helpful? https://github.com/upstash/context7",
+        },
+      },
+      {
+        type: "message",
+        message: {
+          role: "assistant",
+          content: "Context7 is useful as a supplemental Pi documentation source.",
+        },
+      },
+    ]);
+    const prompt = JSON.parse(buildTitlePrompt(undefined, undefined, context));
+
+    expect(prompt).toMatchObject({
+      is_new_session: true,
+      current_user_request: "would this be helpful? https://github.com/upstash/context7",
+      current_assistant_outcome: "Context7 is useful as a supplemental Pi documentation source.",
+      previous_session_title: null,
+      working_directory_hint: null,
+    });
+    expect(prompt.project).toBeUndefined();
+    expect(Object.keys(prompt).at(-1)).toBe("working_directory_hint");
+  });
+
+  test("keeps provisional first prompts out of completed assistant context", () => {
+    const context = buildTitleContext([], "Start improving session titles");
+    expect(context.currentUserRequest).toBe("Start improving session titles");
+    expect(context.currentAssistantOutcome).toBeUndefined();
+    expect(context.bootstrapPriorTurns).toEqual([]);
+  });
+
+  test("redacts Pi clipboard temp paths from title context", () => {
+    const path =
+      "/var/folders/sp/fywhcyx14lq17414yv54gyqh0000gn/T/pi-clipboard-1a6dda4b-2944-4d05-9635-7b7194354361.png";
+    expect(redactEphemeralTitlePaths(`inspect ${path}`)).toBe("inspect [clipboard image]");
+
+    const context = buildTitleContext([
+      {
+        type: "message",
+        message: { role: "user", content: [{ type: "text", text: `what is this ${path}` }] },
+      },
+      {
+        type: "message",
+        message: { role: "assistant", content: `Read ${path} and explained the screenshot.` },
+      },
+    ]);
+    expect(context.currentUserRequest).toBe("what is this [clipboard image]");
+    expect(context.currentAssistantOutcome).toBe(
+      "Read [clipboard image] and explained the screenshot.",
+    );
+    expect(buildTitlePrompt("project", path, context)).not.toContain("pi-clipboard-");
+  });
+
+  test("bootstraps legacy sessions from the latest three completed turns", () => {
+    const entries = [
+      { type: "message", message: { role: "user", content: "Use AX for website content." } },
+      { type: "message", message: { role: "assistant", content: "Configured AX." } },
+      { type: "message", message: { role: "user", content: "Improve Mistral web-search output." } },
+      {
+        type: "message",
+        message: { role: "assistant", content: "Improved Mistral web-search rendering." },
+      },
+      {
+        type: "message",
+        message: { role: "user", content: "Tune automatic session title prompts." },
+      },
+      {
+        type: "message",
+        message: { role: "assistant", content: "Updated automatic title focus rules." },
+      },
+      {
+        type: "message",
+        message: { role: "user", content: "Add rolling summaries to automatic session titles." },
+      },
+      {
+        type: "message",
+        message: {
+          role: "assistant",
+          content: "Implemented rolling title summaries and branch persistence.",
+        },
+      },
+    ];
+    const context = buildTitleContext(entries);
+    expect(context.previousFocus).toBeUndefined();
+    expect(context.bootstrapPriorTurns).toEqual([
+      {
+        userRequest: "Improve Mistral web-search output.",
+        assistantOutcome: "Improved Mistral web-search rendering.",
+      },
+      {
+        userRequest: "Tune automatic session title prompts.",
+        assistantOutcome: "Updated automatic title focus rules.",
+      },
+    ]);
+    expect(context.currentUserRequest).toBe("Add rolling summaries to automatic session titles.");
+    expect(context.currentAssistantOutcome).toBe(
+      "Implemented rolling title summaries and branch persistence.",
+    );
+  });
+
+  test("enforces every context and prompt cap", () => {
+    const huge = "word ".repeat(2_000);
+    const entries = [
+      ...Array.from({ length: 2 }, (_, index) => ({
+        type: "custom",
+        customType: TITLE_STATE_TYPE,
+        data: {
+          version: 2,
+          focusSummary: huge,
+          title: "Long Session",
+          createdAt: `2026-07-16T00:00:${String(index).padStart(2, "0")}.000Z`,
+        },
+      })),
+      { type: "message", message: { role: "user", content: huge } },
+      { type: "message", message: { role: "assistant", content: huge } },
+    ];
+    const context = buildTitleContext(entries);
+    expect(context.currentUserRequest!.length).toBeLessThanOrEqual(MAX_CURRENT_USER_CHARS);
+    expect(context.currentAssistantOutcome!.length).toBeLessThanOrEqual(
+      MAX_CURRENT_ASSISTANT_CHARS,
+    );
+    expect(context.sessionAnchor!.length).toBeLessThanOrEqual(MAX_FOCUS_SUMMARY_CHARS);
+    expect(context.previousFocus!.length).toBeLessThanOrEqual(MAX_FOCUS_SUMMARY_CHARS);
+    expect(buildTitlePrompt("project", "Previous Title", context).length).toBeLessThanOrEqual(
+      MAX_TITLE_CONTEXT_CHARS,
+    );
+
+    const legacyEntries = Array.from({ length: MAX_BOOTSTRAP_PRIOR_TURNS + 1 }, () => [
+      { type: "message", message: { role: "user", content: huge } },
+      { type: "message", message: { role: "assistant", content: huge } },
+    ]).flat();
+    const legacyContext = buildTitleContext(legacyEntries);
+    expect(legacyContext.bootstrapPriorTurns).toHaveLength(MAX_BOOTSTRAP_PRIOR_TURNS);
+    for (const turn of legacyContext.bootstrapPriorTurns) {
+      expect(turn.userRequest.length).toBeLessThanOrEqual(MAX_BOOTSTRAP_MESSAGE_CHARS);
+      expect(turn.assistantOutcome.length).toBeLessThanOrEqual(MAX_BOOTSTRAP_MESSAGE_CHARS);
+    }
+    expect(buildTitlePrompt("project", "Previous Title", legacyContext).length).toBeLessThanOrEqual(
+      MAX_TITLE_CONTEXT_CHARS,
+    );
+  });
+
+  test("parses JSON, fenced JSON, and legacy plain titles", () => {
+    expect(
+      parseTitleModelResponse(
+        JSON.stringify({
+          focus_summary: "Ongoing Mistral web-search work.",
+          title: "Mistral Web Search",
+        }),
+      ),
+    ).toEqual({
+      focusSummary: "Ongoing Mistral web-search work.",
+      title: "Mistral Web Search",
+    });
+    expect(
+      parseTitleModelResponse('```json\n{"focus_summary":"Focus","title":"Session Titles"}\n```'),
+    ).toEqual({ focusSummary: "Focus", title: "Session Titles" });
+    expect(parseTitleModelResponse("Legacy Title")).toEqual({ title: "Legacy Title" });
+  });
+
+  test("persists focus-only state and ignores obsolete or malformed fields", () => {
+    const state = createTitleState(
+      {
+        focusSummary: "Maintaining automatic session titles.",
+        title: "Session Titles",
+      },
+      "leaf-1",
+    );
+    const entries = [
+      {
+        type: "custom",
+        customType: TITLE_STATE_TYPE,
+        data: { version: 1, focusSummary: "", title: "" },
+      },
+      { type: "custom", customType: TITLE_STATE_TYPE, data: state },
+    ];
+    expect(titleStates(entries)).toEqual([state]);
+    expect(latestTitleState(entries)).toEqual(state);
+    expect(state).not.toHaveProperty("turnSummary");
+
+    const oldEntry = {
+      type: "custom",
+      customType: TITLE_STATE_TYPE,
+      data: { ...state, turnSummary: "Obsolete turn detail." },
+    };
+    expect(latestTitleState([oldEntry])).toEqual(state);
+    const prompt = JSON.parse(
+      buildTitlePrompt(undefined, state.title, buildTitleContext([oldEntry])),
+    );
+    expect(prompt).toMatchObject({
+      session_anchor: state.focusSummary,
+      previous_focus: state.focusSummary,
+      is_new_session: false,
+    });
+    expect(prompt).not.toHaveProperty("recent_turn_summaries");
+  });
+});

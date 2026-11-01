@@ -7,13 +7,13 @@
 ## 界面
 
 - [pi-unicode-charts](https://www.npmjs.com/package/@howaboua/pi-unicode-charts)：终端柱状图、折线图、散点图、sparkline 和热力图
-- [angristan/pi-extensions](https://github.com/angristan/pi-extensions)：TUI 显示、标题与统计的扩展集合
+- [angristan/pi-extensions](https://github.com/angristan/pi-extensions)：TUI 显示、统计与批量重载的扩展集合
 
 angristan 集合中的具体条目：
 
-- 显示：`accent-color`、`cached-line-resets`、`code-blocks`、`hyperlinks`。
+- 显示：`cached-line-resets`、`code-blocks`、`hyperlinks`；`accent-color` 已停用。
 - 状态：`turn-stats`、`working-timer`。
-- 会话：`auto-session-title`、`reload-all`；Herdr 标签页同步由 [pi-herdr-tab-title](../packages/pi-herdr-tab-title/README.md) 负责。
+- 会话：`reload-all`。自动标题由本仓库的 [pi-auto-session-title](../packages/pi-auto-session-title/README.md) 维护，上游同名入口已停用；Herdr 标签页同步由 [pi-herdr-tab-title](../packages/pi-herdr-tab-title/README.md) 负责。
 
 ## 会话
 

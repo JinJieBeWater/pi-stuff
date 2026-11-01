@@ -12,6 +12,7 @@
 | [pi-borderless-tables](packages/pi-borderless-tables)   | 无框对齐表格                                          |
 | [pi-herdr-session-move](packages/pi-herdr-session-move) | 把当前 Pi 对话转到另一个已有目录                      |
 | [pi-herdr-tab-title](packages/pi-herdr-tab-title)       | 在 Herdr Core/App 和旧 TUI 中同步 Pi 标签页名称       |
+| [pi-auto-session-title](packages/pi-auto-session-title) | 自动维护会话标题，支持用户语言、自定义提示词和模型回退 |
 | [pi-drop-session](packages/pi-drop-session)             | 新建会话后，将旧会话文件送到废纸篓                    |
 | [pi-context-policy](packages/pi-context-policy)         | 按环境选择提示词、托管扩展、工具和 Skill              |
 | [pi-tool-exposure](packages/pi-tool-exposure)           | 按配置调整工具暴露，使用原生 package discovery 找入口 |
@@ -35,7 +36,7 @@ pi install git:github.com/JinJieBeWater/pi-stuff
 pi config
 ```
 
-默认发现上方八项扩展和 Pi 版 `show-me`，不安装[个人配置清单](docs/personal-setup.md)中的第三方项目。在 `pi config` 中关闭不需要的入口。已有会话执行 `/reload` 或重开。
+默认发现上方九项扩展和 Pi 版 `show-me`，不安装[个人配置清单](docs/personal-setup.md)中的第三方项目。在 `pi config` 中关闭不需要的入口。已有会话执行 `/reload` 或重开。
 
 不要同时加载这个 Git package 和相同扩展或 Skill 的本地入口，以免重复注册。
 
@@ -58,6 +59,7 @@ pi config
 - [Mermaid](packages/pi-lovely-mermaid/README.md#配置)：启用前将 Pi 的 `markdown.mermaid` 设为 `off`，避免原生渲染先处理代码块。
 - [会话搬迁](packages/pi-herdr-session-move/README.md#使用)：支持 Herdr Core 与旧 TUI，各自使用原生运行接口。
 - [标签页名称](packages/pi-herdr-tab-title/README.md)：Core 需有连接该终端的 Herdr App；旧 TUI 使用自身 socket。
+- [自动标题](packages/pi-auto-session-title/README.md)：继续读取 `auto-session-title.json`；启用前停用其他包中的同名扩展，避免重复生成。
 - [`/drop`](packages/pi-drop-session/README.md#使用)：需要可信的回收站命令，默认从 `PATH` 查找 `trash`。
 - [Skill 发现](packages/pi-skill-discovery/README.md#配置)：默认核心名单为空，所有可自动调用的 Skills 都按需查找；原生 `/skill:name` 仍可用。
 
@@ -83,4 +85,4 @@ pi remove git:github.com/JinJieBeWater/pi-stuff
 
 ## 许可
 
-暂未指定整体开源许可证。Mermaid 第三方归属与许可见 [third-party-notices.md](packages/pi-lovely-mermaid/third-party-notices.md)；`show-me` 的 HumanLayer 来源与 MIT 许可见 [Skills 说明](skills/README.md#来源和许可)。依赖遵循各自的许可证。
+暂未指定整体开源许可证。自动标题改编自 angristan/pi-extensions，来源与 MIT 许可见 [扩展说明](packages/pi-auto-session-title/README.md#source-and-license)；Mermaid 第三方归属与许可见 [third-party-notices.md](packages/pi-lovely-mermaid/third-party-notices.md)；`show-me` 的 HumanLayer 来源与 MIT 许可见 [Skills 说明](skills/README.md#来源和许可)。依赖遵循各自的许可证。

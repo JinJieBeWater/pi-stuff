@@ -1,0 +1,250 @@
+export const TITLE_STATE_TYPE = "auto-session-title-state-v2";
+export const MAX_TITLE_CONTEXT_CHARS = 8_000;
+export const MAX_CURRENT_USER_CHARS = 2_000;
+export const MAX_CURRENT_ASSISTANT_CHARS = 2_000;
+export const MAX_FOCUS_SUMMARY_CHARS = 600;
+export const MAX_BOOTSTRAP_PRIOR_TURNS = 2;
+export const MAX_BOOTSTRAP_MESSAGE_CHARS = 700;
+
+export interface TitleState {
+  version: 2;
+  focusSummary: string;
+  title: string;
+  basedOnLeafId?: string;
+  createdAt: string;
+}
+
+export interface BootstrapTurn {
+  userRequest: string;
+  assistantOutcome: string;
+}
+
+export interface TitleContext {
+  sessionAnchor?: string;
+  previousFocus?: string;
+  bootstrapPriorTurns: BootstrapTurn[];
+  currentUserRequest?: string;
+  currentAssistantOutcome?: string;
+}
+
+export interface TitleModelResponse {
+  focusSummary?: string;
+  title?: string;
+}
+
+function piClipboardImagePathPattern(): RegExp {
+  return /(?:file:\/\/)?[^\s"'`<>]*pi-clipboard-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(?:png|jpe?g|gif|webp|bmp)\b/gi;
+}
+
+export function containsEphemeralTitlePath(value: string): boolean {
+  return piClipboardImagePathPattern().test(value);
+}
+
+export function redactEphemeralTitlePaths(value: string): string {
+  return value.replace(piClipboardImagePathPattern(), "[clipboard image]");
+}
+
+function oneLine(value: string): string {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function clip(value: string | undefined, maxChars: number): string | undefined {
+  if (!value) return undefined;
+  const normalized = oneLine(value);
+  if (!normalized) return undefined;
+  if (normalized.length <= maxChars) return normalized;
+  const separator = " … ";
+  const headChars = Math.ceil((maxChars - separator.length) * 0.6);
+  const tailChars = maxChars - separator.length - headChars;
+  return `${normalized.slice(0, headChars).trimEnd()}${separator}${normalized.slice(-tailChars).trimStart()}`;
+}
+
+export function messageText(message: any): string | undefined {
+  if (typeof message?.content === "string") {
+    const text = message.content.trim();
+    return text ? redactEphemeralTitlePaths(text) : undefined;
+  }
+  if (!Array.isArray(message?.content)) return undefined;
+  const text = message.content
+    .filter((part: any) => part?.type === "text" && typeof part.text === "string")
+    .map((part: any) => part.text)
+    .join("\n")
+    .trim();
+  return text ? redactEphemeralTitlePaths(text) : undefined;
+}
+
+function stateFromEntry(entry: any): TitleState | undefined {
+  if (entry?.type !== "custom" || entry.customType !== TITLE_STATE_TYPE) return undefined;
+  const data = entry.data;
+  if (
+    data?.version !== 2 ||
+    typeof data.focusSummary !== "string" ||
+    typeof data.title !== "string"
+  )
+    return undefined;
+  const focusSummary = clip(redactEphemeralTitlePaths(data.focusSummary), MAX_FOCUS_SUMMARY_CHARS);
+  const title = oneLine(data.title);
+  if (!focusSummary || !title) return undefined;
+  return {
+    version: 2,
+    focusSummary,
+    title,
+    basedOnLeafId: typeof data.basedOnLeafId === "string" ? data.basedOnLeafId : undefined,
+    createdAt: typeof data.createdAt === "string" ? data.createdAt : "",
+  };
+}
+
+export function titleStates(entries: readonly any[]): TitleState[] {
+  return entries.map(stateFromEntry).filter((state): state is TitleState => Boolean(state));
+}
+
+export function latestTitleState(entries: readonly any[]): TitleState | undefined {
+  return titleStates(entries).at(-1);
+}
+
+function completedTurns(entries: readonly any[]): BootstrapTurn[] {
+  const turns: BootstrapTurn[] = [];
+  let userRequests: string[] = [];
+  let assistantOutcomes: string[] = [];
+  const flush = () => {
+    if (userRequests.length > 0 && assistantOutcomes.length > 0) {
+      turns.push({
+        userRequest: userRequests.join("\n"),
+        assistantOutcome: assistantOutcomes.at(-1)!,
+      });
+    }
+    userRequests = [];
+    assistantOutcomes = [];
+  };
+
+  for (const entry of entries) {
+    if (entry?.type !== "message") continue;
+    const text = messageText(entry.message);
+    if (!text) continue;
+    if (entry.message?.role === "user") {
+      if (userRequests.length > 0 && assistantOutcomes.length > 0) flush();
+      userRequests.push(text);
+    } else if (entry.message?.role === "assistant" && userRequests.length > 0) {
+      assistantOutcomes.push(text);
+    }
+  }
+  flush();
+  return turns;
+}
+
+export function buildTitleContext(entries: readonly any[], provisionalUser?: string): TitleContext {
+  const states = titleStates(entries);
+  let latestStateIndex = -1;
+  for (let index = entries.length - 1; index >= 0; index--) {
+    if (stateFromEntry(entries[index])) {
+      latestStateIndex = index;
+      break;
+    }
+  }
+
+  const messages = entries.slice(latestStateIndex + 1).filter((entry) => entry?.type === "message");
+  const userTexts = messages
+    .filter((entry) => entry.message?.role === "user")
+    .map((entry) => messageText(entry.message))
+    .filter((text): text is string => Boolean(text));
+  const assistantTexts = messages
+    .filter((entry) => entry.message?.role === "assistant")
+    .map((entry) => messageText(entry.message))
+    .filter((text): text is string => Boolean(text));
+  const latestState = states.at(-1);
+  const bootstrapTurns =
+    latestState || provisionalUser
+      ? []
+      : completedTurns(messages).slice(-(MAX_BOOTSTRAP_PRIOR_TURNS + 1));
+  const latestBootstrapTurn = bootstrapTurns.at(-1);
+  const bootstrapPriorTurns = bootstrapTurns.slice(0, -1).map((turn) => ({
+    userRequest: clip(turn.userRequest, MAX_BOOTSTRAP_MESSAGE_CHARS)!,
+    assistantOutcome: clip(turn.assistantOutcome, MAX_BOOTSTRAP_MESSAGE_CHARS)!,
+  }));
+
+  return {
+    sessionAnchor: clip(states[0]?.focusSummary, MAX_FOCUS_SUMMARY_CHARS),
+    previousFocus: clip(latestState?.focusSummary, MAX_FOCUS_SUMMARY_CHARS),
+    bootstrapPriorTurns,
+    currentUserRequest: clip(
+      provisionalUser ??
+        (latestState
+          ? userTexts.join("\n")
+          : (latestBootstrapTurn?.userRequest ?? userTexts.at(-1))),
+      MAX_CURRENT_USER_CHARS,
+    ),
+    currentAssistantOutcome: provisionalUser
+      ? undefined
+      : clip(
+          latestState
+            ? assistantTexts.at(-1)
+            : (latestBootstrapTurn?.assistantOutcome ?? assistantTexts.at(-1)),
+          MAX_CURRENT_ASSISTANT_CHARS,
+        ),
+  };
+}
+
+export function titleContextHasContent(context: TitleContext): boolean {
+  return Boolean(
+    context.currentUserRequest ||
+    context.currentAssistantOutcome ||
+    context.sessionAnchor ||
+    context.previousFocus ||
+    context.bootstrapPriorTurns.length > 0,
+  );
+}
+
+export function buildTitlePrompt(
+  workingDirectoryHint: string | undefined,
+  previousTitle: string | undefined,
+  context: TitleContext,
+): string {
+  const isNewSession =
+    !context.sessionAnchor && !context.previousFocus && context.bootstrapPriorTurns.length === 0;
+  const prompt = JSON.stringify({
+    is_new_session: isNewSession,
+    current_user_request: context.currentUserRequest ?? null,
+    current_assistant_outcome: context.currentAssistantOutcome ?? null,
+    session_anchor: context.sessionAnchor ?? null,
+    previous_focus: context.previousFocus ?? null,
+    bootstrap_prior_turns: context.bootstrapPriorTurns,
+    previous_session_title: previousTitle
+      ? (clip(redactEphemeralTitlePaths(previousTitle), 72) ?? null)
+      : null,
+    working_directory_hint: clip(workingDirectoryHint, 200) ?? null,
+  });
+  if (prompt.length > MAX_TITLE_CONTEXT_CHARS)
+    throw new Error(`Title context exceeded ${MAX_TITLE_CONTEXT_CHARS} characters.`);
+  return prompt;
+}
+
+export function parseTitleModelResponse(raw: string): TitleModelResponse {
+  const trimmed = raw.trim();
+  const fenced = /^```(?:json)?\s*([\s\S]*?)\s*```$/i.exec(trimmed)?.[1] ?? trimmed;
+  try {
+    const parsed = JSON.parse(fenced);
+    if (!parsed || typeof parsed !== "object") return {};
+    const focusSummary = parsed.focus_summary ?? parsed.focusSummary;
+    return {
+      focusSummary:
+        typeof focusSummary === "string" ? clip(focusSummary, MAX_FOCUS_SUMMARY_CHARS) : undefined,
+      title: typeof parsed.title === "string" ? oneLine(parsed.title) : undefined,
+    };
+  } catch {
+    // Accept legacy plain-title responses during rollout.
+    return { title: oneLine(trimmed) || undefined };
+  }
+}
+
+export function createTitleState(
+  response: Required<TitleModelResponse>,
+  basedOnLeafId?: string,
+): TitleState {
+  return {
+    version: 2,
+    focusSummary: clip(response.focusSummary, MAX_FOCUS_SUMMARY_CHARS)!,
+    title: oneLine(response.title),
+    basedOnLeafId,
+    createdAt: new Date().toISOString(),
+  };
+}
