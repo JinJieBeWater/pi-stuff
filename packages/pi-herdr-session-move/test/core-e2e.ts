@@ -145,6 +145,7 @@ try {
         const destination = await call(["get", record.targetPane]);
         assert.equal(destination.state, "live");
         assert.equal(destination.foreground.pid, ready.pid);
+        assert.equal(destination.parent, null);
         const copied = SessionManager.open(record.targetSessionFile);
         assert.equal(copied.getCwd(), target);
         assert.equal(copied.getHeader()?.parentSession, sourceFile);

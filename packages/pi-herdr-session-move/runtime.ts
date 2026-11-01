@@ -87,7 +87,7 @@ export function createRuntime(
             "--bg",
             "--cwd",
             cwd,
-            "--outlive-parent",
+            "--no-parent",
             "--no-notify",
             "--label",
             `herdr.space=sp${token}`,

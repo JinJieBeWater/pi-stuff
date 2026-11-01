@@ -68,7 +68,7 @@ test("Pi's initial command waits for Core's foreground sample without accepting 
   expect(reads).toBe(3);
 });
 
-test("Core launch survives the parent, does not submit terminal input and binds the returned address", async () => {
+test("Core launch creates an independent terminal, does not submit input and binds its address", async () => {
   const f = host(() => ({ address: "t2" }));
   let bound = "";
   await f.runtime!.launch("/private pi", ["--session", "/private pi/session.jsonl"], async (id) => {
@@ -79,7 +79,7 @@ test("Core launch survives the parent, does not submit terminal input and binds 
   const call = f.calls[0]!;
   expect(call.command).toBe("hc");
   expect(call.args).toContain("--bg");
-  expect(call.args).toContain("--outlive-parent");
+  expect(call.args).toContain("--no-parent");
   expect(call.args).toContain("--no-notify");
   expect(call.args[call.args.indexOf("--cwd") + 1]).toBe("/target with spaces ; $");
   expect(call.args).toContain("PI_CODING_AGENT_DIR=/private pi");
