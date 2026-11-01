@@ -1,5 +1,5 @@
 import { expect, test } from "vite-plus/test";
-import { chmod, mkdir, mkdtemp, rm } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { SessionManager } from "@earendil-works/pi-coding-agent";
@@ -107,7 +107,7 @@ test("native command failures, malformed responses and cancelled operations stay
 });
 
 test("Core receiver waits for the source to publish its private binding, then checks backend and terminal", async () => {
-  const root = await mkdtemp(join(tmpdir(), "pi-move-binding-"));
+  const root = await realpath(await mkdtemp(join(tmpdir(), "pi-move-binding-")));
   try {
     const directory = join(root, "session-moves", "move-fixture");
     await mkdir(directory, { recursive: true, mode: 0o700 });
