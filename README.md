@@ -1,5 +1,7 @@
 # pi-stuff
 
+[简体中文](README.md) | [English](README.en.md)
+
 我写的 [Pi](https://github.com/earendil-works/pi) 扩展、定制 Skills 和自用配置。
 
 [自写扩展](#自写扩展) · [定制 Skills](#定制-skills) · [自用清单](docs/personal-setup.md) · [个人配置](config/README.md) · [安装](#安装) · [开发指南](docs/development.md)
@@ -87,4 +89,4 @@ pi remove git:github.com/JinJieBeWater/pi-stuff
 
 ## 许可
 
-暂未指定整体开源许可证。自动标题改编自 angristan/pi-extensions，来源与 MIT 许可见 [扩展说明](packages/pi-auto-session-title/README.md#source-and-license)；Mermaid 第三方归属与许可见 [third-party-notices.md](packages/pi-lovely-mermaid/third-party-notices.md)；`show-me` 的 HumanLayer 来源与 MIT 许可见 [Skills 说明](skills/README.md#来源和许可)。依赖遵循各自的许可证。
+暂未指定整体开源许可证。自动标题改编自 angristan/pi-extensions，来源与 MIT 许可见 [扩展说明](packages/pi-auto-session-title/README.md#来源与许可证)；Mermaid 第三方归属与许可见 [third-party-notices.md](packages/pi-lovely-mermaid/third-party-notices.md)；`show-me` 的 HumanLayer 来源与 MIT 许可见 [Skills 说明](skills/README.md#来源和许可)。依赖遵循各自的许可证。

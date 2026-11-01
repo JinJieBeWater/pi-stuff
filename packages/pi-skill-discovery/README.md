@@ -1,3 +1,5 @@
+[简体中文](README.md) | [English](README.en.md)
+
 # Pi Skill Discovery
 
 只在系统提示词中展示配置的核心 Skill 目录，其余可自动调用的 Skills 通过只读工具 `skill_search` 按需查找。只缩减目录元数据，不删除原生 Skill 注册、不改写正文，也不影响显式 `/skill:name` 调用。

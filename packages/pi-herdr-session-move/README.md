@@ -1,3 +1,5 @@
+[简体中文](README.md) | [English](README.en.md)
+
 # Pi Herdr Session Move
 
 把当前 Pi 对话转到本机一个已存在的目录。目标可以是另一仓库、已有 worktree 或非 Git 目录；源 cwd 已移动或删除也能迁移。

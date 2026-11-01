@@ -1,5 +1,7 @@
 # 开发指南
 
+[简体中文](development.md) | [English](development.en.md)
+
 日常使用请按[仓库 README](../README.md#安装)安装 Git package。开发需要 Bun 1.4.4 管理依赖，以及 Node.js 运行工具和测试；[`.node-version`](../.node-version) 使用 Node 24，最低支持 Node 22.19。
 
 ## 准备

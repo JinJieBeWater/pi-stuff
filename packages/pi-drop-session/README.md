@@ -1,3 +1,5 @@
+[简体中文](README.md) | [English](README.en.md)
+
 # Pi Drop Session
 
 手动执行 `/drop`：先打开新会话，再将旧会话文件送到废纸篓。不注册 agent 工具。

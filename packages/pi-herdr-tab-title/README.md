@@ -1,3 +1,5 @@
+[简体中文](README.md) | [English](README.en.md)
+
 # Pi Herdr tab title
 
 把 Pi 会话名称同步到所在 Herdr 标签页。响应 `session_start` 和

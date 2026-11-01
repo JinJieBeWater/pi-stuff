@@ -1,3 +1,5 @@
+[简体中文](README.md) | [English](README.en.md)
+
 # Pi Context Policy
 
 按环境选择提示词段落，以及托管的扩展、工具和 Skill。默认识别 Herdr Core 和旧 Herdr TUI，提供对应的官方手册入口；资源托管需要显式配置。

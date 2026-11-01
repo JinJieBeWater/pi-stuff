@@ -1,5 +1,7 @@
 # 本地 Pi 维护状态
 
+[简体中文](local-maintenance-audit-2026-11-01.md) | [English](local-maintenance-audit-2026-11-01.en.md)
+
 核对日期：2026-11-01。扩展和 Skills 见[仓库 README](../README.md)，个人使用策略见[配置归档](../config/README.md)。这里记录仓库外实现的来源、部署差异和维护缺口。
 
 ## 本地 fork 与安装来源

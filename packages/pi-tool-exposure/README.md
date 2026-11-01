@@ -1,3 +1,5 @@
+[简体中文](README.md) | [English](README.en.md)
+
 # Pi Tool Exposure
 
 按配置调整已安装 Pi package 的工具暴露方式。由 Pi 原生 package discovery 解析 manifest，不写死扩展文件路径，不修改上游源码，也不会自动安装包。

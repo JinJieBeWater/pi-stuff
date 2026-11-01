@@ -1,3 +1,5 @@
+[简体中文](RECOVERY.md) | [English](RECOVERY.en.md)
+
 # 恢复未完成的会话搬迁
 
 适用于 `/session-move` 或 `herdr_session_move` 报错、超时、trust 阻塞，以及成功通知与现场不符。

@@ -1,8 +1,12 @@
 # 个人 Pi 配置
 
+[简体中文](README.md) | [English](README.en.md)
+
 核对日期：2026-11-01。保存当前 macOS 安装的个人配置，供对比和恢复，不随 Pi Git package 自动加载。
 
 `pi/` 对应 Pi 用户目录，默认是 `~/.pi/agent/`；`rpiv-todo/` 对应 `~/.config/rpiv-todo/`。主目录路径统一为 `~/`，设备 ID、已读版本、音频初始化状态和认证不入库。
+
+本次逐项复核 31 份配置与自定义资源；除上述归一化和文档格式外，与本机一致。当前有 38 个配置包、36 个原生自动发现启用的扩展入口，工具适配另行加载 4 个入口，`pi-herdr` 仅在旧 TUI 条件下加载。来源、过滤及托管方式见[个人清单](../docs/personal-setup.md)。入口计数包含包内 changelog 及两个本机自动生成的 hook，不含宿主内置扩展。
 
 ## 内容
 
@@ -16,9 +20,11 @@
 | [multi-agent-review/](pi/skills/multi-agent-review/)                                                                                                          | 手动审查 Skill、校验脚本及离线测试      |
 | [rpiv-todo/config.json](rpiv-todo/config.json)                                                                                                                | 任务追踪指引，不含任务数据              |
 
-其余文件保存快捷键、主题、交互、Ponytail、辅助模型、网页抓取、权限和工作树模板。停用的 accent-color、MCP 配置、未定制的语音模板和等于默认值的 `/drop` 配置不保留。`session.titleGeneration` 只保留停用标记，自动标题由本仓库扩展负责。
+其余文件保存快捷键、主题、交互、Ponytail、辅助模型、网页抓取、权限和工作树模板。停用的 accent-color、MCP、未加载的 model-router 配置、未定制的语音模板和等于默认值的 `/drop` 配置不保留。`session.titleGeneration` 只保留停用标记，自动标题由本仓库扩展负责。
 
 原生 Codemode 开启，PCC 使用 `normal`；两者负责不同层。
+
+JSON 字段、命令和路径保持原样；归档的指令、Skill 和角色 prompt 保留本机原文，双语说明位于各 README 和指南。
 
 ## 恢复与维护
 

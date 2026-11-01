@@ -1,3 +1,5 @@
+[简体中文](TESTING.md) | [English](TESTING.en.md)
+
 # 会话搬迁测试
 
 依赖准备和全仓检查见[开发指南](../../docs/development.md#验证)。下面的命令均在 `packages/pi-herdr-session-move/` 目录运行。

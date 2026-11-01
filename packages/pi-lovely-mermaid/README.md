@@ -1,3 +1,5 @@
+[简体中文](README.md) | [English](README.en.md)
+
 # Pi Lovely Mermaid
 
 用 `lovely-mermaid` 将 Pi 聊天中的 Mermaid 代码块显示为终端字符图，跟随 Pi 主题，保留作者定义的节点样式和终端支持的超链接。不需要模型调用额外工具。
