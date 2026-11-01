@@ -6,6 +6,8 @@
 
 当前使用的参数、Pi 指令、Shepherdr 角色预设与 todo 指引见[个人配置](../config/README.md)。
 
+本地 fork、定制构建和仓库外工具的状态见[维护记录](local-maintenance-audit-2026-11-01.md)。
+
 ## 界面
 
 - [pi-unicode-charts](https://www.npmjs.com/package/@howaboua/pi-unicode-charts)：终端柱状图、折线图、散点图、sparkline 和热力图

@@ -27,6 +27,8 @@
 3. [权限配置](pi/extensions/pi-permission-system/config.json)保留 `yoloMode: true`；[工作树模板](pi/templates/worktree.json)会复制 `.env`、链接项目目录并安装依赖。按目标环境选择是否采用。
 4. 合并后在空闲会话 `/reload` 或重开，核对工具暴露和角色列表。修改运行配置后再同步副本，继续排除设备状态、旧修订和备份。会话、日志、缓存及跨机同步载荷留在各自机器。
 
+定制构建和跨机同步工具的来源见[维护记录](../docs/local-maintenance-audit-2026-11-01.md)。
+
 手动审查校验器沿用 Python 3，可离线运行，不调用模型：
 
 ```sh
