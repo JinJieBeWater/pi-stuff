@@ -109,6 +109,9 @@ export default function herdrTabTitle(pi: ExtensionAPI, deps: RuntimeDependencie
       !/^tb[0-9a-f]{32}$/.test(tab)
     )
       return;
+    // Each Pi keeps its own name on its terminal, so panes sharing a tab stay distinguishable.
+    if (!current()) return;
+    await json("hc", ["label", terminal!, `pi.session=${title}`]);
     const world = object(await json("herdr-app", ["ls"]));
     if (!Array.isArray(world.spaces)) return;
     const matches = world.spaces.flatMap((value) => {
@@ -116,11 +119,12 @@ export default function herdrTabTitle(pi: ExtensionAPI, deps: RuntimeDependencie
       if (entry.machine !== null || entry.id !== space || !Array.isArray(entry.tabs)) return [];
       return entry.tabs.filter((value) => {
         const entry = object(value);
-        return (
-          entry.id === tab &&
-          Array.isArray(entry.terminals) &&
-          entry.terminals.some((value) => object(value).terminal === terminal)
-        );
+        if (entry.id !== tab || !Array.isArray(entry.terminals)) return false;
+        // The tab follows its first agent only; later agents in split panes would otherwise take turns renaming it.
+        const owner = entry.terminals
+          .map(object)
+          .find((value) => value.terminal === terminal || typeof value.status === "string");
+        return owner?.terminal === terminal;
       });
     });
     if (matches.length !== 1 || !current()) return;

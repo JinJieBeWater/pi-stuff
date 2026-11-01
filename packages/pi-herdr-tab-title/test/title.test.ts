@@ -94,7 +94,9 @@ test("Core verifies this terminal and local layout before renaming the exact tab
   await f.emit("session_info_changed", "  renamed session  ");
   expect(f.calls.filter((call) => call.command === "hc")).toEqual([
     { command: "hc", args: ["get", "t19", "--json"] },
+    { command: "hc", args: ["label", "t19", "pi.session=initial session"] },
     { command: "hc", args: ["get", "t19", "--json"] },
+    { command: "hc", args: ["label", "t19", "pi.session=renamed session"] },
   ]);
   expect(
     f.renames().map((call) => [call.command, ...call.args.slice(0, 2), JSON.parse(call.args[2]!)]),
@@ -224,6 +226,50 @@ test("Core target mismatches, missing layout labels and worker-only appearances 
   };
   await f.emit("session_start");
   expect(f.renames()).toHaveLength(0);
+});
+
+test("in a shared tab only the first agent renames it, while every agent labels its own terminal", async () => {
+  const world = (terminals: unknown[]) => ({
+    spaces: [{ id: space, machine: null, tabs: [{ id: tab, terminals }] }],
+  });
+  const later = fixture();
+  later.responses.world = world([
+    { terminal: "t20", status: "working" },
+    { terminal: "t19", status: "idle" },
+  ]);
+  await later.emit("session_info_changed", "second agent");
+  expect(later.renames()).toHaveLength(0);
+  expect(later.calls).toContainEqual({
+    command: "hc",
+    args: ["label", "t19", "pi.session=second agent"],
+  });
+
+  const first = fixture();
+  first.responses.world = world([
+    { terminal: "t19", status: "working" },
+    { terminal: "t20", status: "idle" },
+  ]);
+  await first.emit("session_info_changed", "first agent");
+  expect(first.renames().map((call) => JSON.parse(call.args[2]!).name)).toEqual(["first agent"]);
+
+  const afterShell = fixture();
+  afterShell.responses.world = world([
+    { terminal: "t20", status: null },
+    { terminal: "t19", status: null },
+  ]);
+  await afterShell.emit("session_start");
+  expect(afterShell.renames()).toHaveLength(1);
+});
+
+test("an unverified Core target never labels a terminal", async () => {
+  const f = fixture();
+  f.responses.target = {
+    address: "t20",
+    state: "live",
+    labels: { "herdr.space": space, "herdr.tab": tab },
+  };
+  await f.emit("session_start");
+  expect(f.calls.filter((call) => call.args[0] === "label")).toHaveLength(0);
 });
 
 test("same terminal address on another layout or machine is insufficient", async () => {

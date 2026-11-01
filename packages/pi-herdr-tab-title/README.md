@@ -12,6 +12,9 @@
   `herdr.space` / `herdr.tab` 标签，与 `herdr-app ls` 中本地
   `machine: null` 的 space、tab、terminal 三者一致，然后显式传入
   `id` / `name` 调用 `herdr-app do tab.rename`。执行前复核 App socket 身份。
+- 同一标签页有多个 agent（分屏）时，只有排在最前的 agent 改标签名，避免
+  轮流覆盖；每个 Pi 都把自己的会话名写到本终端标签 `pi.session`
+  （`hc label`），侧边栏据此区分同一标签页里的各个 agent。
 - TUI：使用 `HERDR_ENV=1`、`HERDR_SOCKET_PATH`、`HERDR_PANE_ID`，每次从
   `herdr pane current --current` 取得当前位置，向该 socket 发送
   `tab.rename`，参数为 `tab_id` / `label`；pane 移动后跟随新标签页。
