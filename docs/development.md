@@ -27,6 +27,8 @@ bun install --frozen-lockfile --ignore-scripts
 
 默认测试通过 Vite+ 内置的 Vitest 在 Node 环境运行，测试 API 从 `vite-plus/test` 导入。测试使用隔离夹具或替身，不请求真实模型、不执行真实 trash，也不搬迁用户会话。根测试另用临时 Pi 配置，通过真实 `DefaultResourceLoader` 和 jiti 加载全部扩展。
 
+多个 `before_agent_start` 回调共同处理 `systemPromptOptions` 时，组合验收以全部回调结束后最终构造的系统提示为准。[Skill 发现与 Codex conversion 共用](../packages/pi-skill-discovery/README.md#与-codex-conversion-共用)列出了顺序约束，以及目录、搜索和原生注册表的检查项。
+
 `bun run` 只启动仓库脚本。根测试执行 `vp test run`，统一发现 `*.test.ts`；格式化、lint 和测试共用根 [`vite.config.ts`](../vite.config.ts)。类型检查由 `vp exec tsc` 执行，根脚本用 `vp run` 调度各扩展的检查。
 
 只检查某个扩展时，在该包目录运行：
