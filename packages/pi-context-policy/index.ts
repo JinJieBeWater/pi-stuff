@@ -8,7 +8,7 @@ export { parsePolicy, type Policy } from "./policy.ts";
 const defaultSections: NonNullable<Policy["sections"]> = [
   {
     id: "herdr-core",
-    text: "当前运行在 Herdr Core 管理的终端中。agent 协作使用 Shepherdr；需要直接操作终端时先读 hc --skill；需要操作桌面窗口时先确认 herdr-app 可用并读 herdr-app --skill。",
+    text: "当前运行在 Herdr Core 管理的终端中。父子 agent 协作用 Shepherdr，同级 agent 协作用 hc；使用 hc 前先读 hc --skill；需要查询布局或操作窗口时先确认 herdr-app 可用并读 herdr-app --skill。",
     whenEnv: { HC_TERMINAL_ID: true, HC_TERMINAL_SOCKET: true },
   },
   {
