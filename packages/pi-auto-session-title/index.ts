@@ -139,8 +139,22 @@ export function loadTitleModelConfig(): TitleModelConfig {
   return loadTitleModelConfigs()[0]!;
 }
 
-const MAX_TITLE_WORDS = 3;
-const MAX_TITLE_CHARS = 72;
+const MAX_TITLE_CHARS = 52;
+const CONVENTIONAL_TITLE_TYPES = new Set([
+  "feat",
+  "fix",
+  "docs",
+  "style",
+  "refactor",
+  "perf",
+  "test",
+  "build",
+  "ci",
+  "chore",
+  "revert",
+  "research",
+  "ops",
+]);
 const DISABLE_AUTO_TITLE_FLAG = "no-auto-title";
 
 function debug(...values: unknown[]) {
@@ -155,11 +169,12 @@ Return only one JSON object with exactly these string fields:
 {"focus_summary":"...","title":"..."}
 
 Language:
-- Write both fields in the language of the user's natural-language prose in current_user_request. For mixed-language requests, use the dominant language of that prose. Code, URLs, proper names, and the assistant's response are not language evidence.
+- Write focus_summary and the title description in the language of the user's natural-language prose in current_user_request. For mixed-language requests, use the dominant language of that prose. Code, URLs, proper names, and the assistant's response are not language evidence.
 - A clear current user language takes precedence over previous summaries and previous_session_title. Preserve project, product, and technical names in their original spelling.
 
 focus_summary:
 - If is_new_session is true, current_user_request and current_assistant_outcome are authoritative. Derive the focus from their concrete subject and requested action, even when the user phrases it indirectly, casually, or mostly as a URL.
+- Name the primary subject by its exact identifier, such as the package, repository, product, or tool name, whenever the session establishes one.
 - On a new session, do not invent a broader project, workflow, or objective that the current request and outcome do not establish.
 - working_directory_hint is weak location metadata only. It may be a username, home directory, shared folder, or unrelated checkout. Never infer the session focus from it when the request or outcome identifies a subject.
 - If is_new_session is false, use session_anchor as evidence of the original objective. Use previous_focus, bootstrap_prior_turns, and the current request and outcome to maintain or deliberately revise it.
@@ -172,22 +187,34 @@ focus_summary:
 
 title:
 - First determine focus_summary, then title the complete focus at the same scope.
+- Format the title as a Conventional Commits header: type(scope): description
+- type is the English keyword for the session's primary intent:
+  - feat: new capability
+  - fix: broken behavior
+  - refactor: restructuring
+  - perf: performance
+  - test: tests
+  - docs: writing documentation
+  - research: investigation, evaluation, comparison, questions, or explanation without a deliverable change
+  - ops: deployment, infrastructure, machine environment, or system configuration
+  - chore: repository tooling or other maintenance
+  - style, build, ci, revert: their standard Conventional Commits meanings
+- scope is the primary subject's identifier from focus_summary in lowercase kebab-case, for example context7 or pi-footer. Write type: description without parentheses when no single subject applies.
+- description is a short, specific phrase in the user's language. Keep the whole title within 52 characters.
 - If is_new_session is true, name the concrete subject of the current request. Do not broaden it to a generic project or workflow.
 - A package, repository, product, article, or tool being evaluated is the primary subject of a new session, not a subordinate tool-choice discussion.
-- Never use working_directory_hint in the title unless the current request or outcome explicitly establishes that same named project as the subject.
-- Return one short, specific noun phrase in the user's language. Use natural spacing for that language; use at most 3 whitespace-separated parts and 72 characters.
-- Omit leading task verbs such as Update, Fix, 更新, or 修复.
-- Do not use quotes, markdown, prefixes, commentary, or sentence-ending punctuation.
+- Never use working_directory_hint in the title or scope unless the current request or outcome explicitly establishes that same named project as the subject.
+- Return the bare header as plain text, ending without punctuation.
 - Use previous_session_title only as a tie-breaker between equally accurate titles that follow the language rules. Never preserve it when it names only a component of focus_summary.
-- If is_new_session is false, keep the title's subject and scope stable after a clarification, architecture question, implementation detail, tool choice, or other subordinate discussion. Translate descriptive wording when needed to match the user's language while keeping proper names unchanged.
+- If is_new_session is false, keep the title's type, scope, and subject stable after a clarification, architecture question, implementation detail, tool choice, or other subordinate discussion. Translate the description when needed to match the user's language while keeping type, scope, and proper names unchanged.
 - Replace a stale over-specific title when session_anchor and the current turn reveal the broader recurring objective. When previous_session_title and focus_summary differ in scope, ignore title continuity.
 
 Examples:
-- New session, request "would this be helpful? https://github.com/upstash/context7", outcome evaluating Context7 for Pi: "Context7 Evaluation", never a title derived from working_directory_hint.
-- The same evaluation requested as "这个对 Pi 有帮助吗？https://github.com/upstash/context7" is titled "Context7 评估", even if the assistant responds in English.
-- An English-language session building Meridian's synchronization system remains "Meridian Sync" while discussing its revision DAG, RPC layer, and notification WebSockets.
-- A Chinese request that becomes sustained work on an independent Pi footer deliverable can become "Pi 紧凑页脚".
-- Previous "API Auth Refactor" plus the user asking "顺便看看这个 shell 命令" keeps the same focus with the Chinese title "API 认证重构".`;
+- New session, request "would this be helpful? https://github.com/upstash/context7", outcome evaluating Context7 for Pi: "research(context7): evaluation for Pi", never a title derived from working_directory_hint.
+- The same evaluation requested as "这个对 Pi 有帮助吗？https://github.com/upstash/context7" is titled "research(context7): Pi 适用性评估", even if the assistant responds in English.
+- An English-language session building Meridian's synchronization system remains "feat(meridian): sync system" while discussing its revision DAG, RPC layer, and notification WebSockets.
+- A Chinese request that becomes sustained work on an independent Pi footer deliverable can become "feat(pi-footer): 紧凑页脚".
+- Previous "refactor(api): authentication layer" plus the user asking "顺便看看这个 shell 命令" keeps the same focus with the Chinese title "refactor(api): 认证层".`;
 
 // oxlint-disable no-control-regex -- Generated titles must not contain terminal control sequences.
 function stripTitleControls(value: string): string {
@@ -221,8 +248,9 @@ export function normalizeTitle(raw: string): string | undefined {
   if (!title || /^(?:untitled|new session|session)$/i.test(title)) return undefined;
   if (looksLikeGeneratedPathTitle(title)) return undefined;
 
-  const words = title.split(" ").filter(Boolean).slice(0, MAX_TITLE_WORDS);
-  title = words.join(" ");
+  const header = /^([a-z]+)(\([^()\s]+\))?\s*[:：]\s*(\S.*)$/i.exec(title);
+  if (!header || !CONVENTIONAL_TITLE_TYPES.has(header[1]!.toLowerCase())) return undefined;
+  title = `${header[1]!.toLowerCase()}${header[2] ?? ""}: ${header[3]}`;
   if (title.length > MAX_TITLE_CHARS) {
     title = `${Array.from(title)
       .slice(0, MAX_TITLE_CHARS - 3)
@@ -463,10 +491,17 @@ export default function (pi: ExtensionAPI, requestDependencies: TitleRequestDepe
       fallbackWarningKey = undefined;
     }
 
-    if (persistState && generated.focusSummary) {
+    // A rename without a completed turn keeps the previous focus but must still record
+    // the title; otherwise the next session_start mistakes it for a manual rename.
+    const focusSummary = persistState
+      ? generated.focusSummary
+      : !isProvisional && !titlesEquivalent(title, latestSummaryState?.title)
+        ? latestSummaryState?.focusSummary
+        : undefined;
+    if (focusSummary) {
       const state = createTitleState(
         {
-          focusSummary: generated.focusSummary,
+          focusSummary,
           title,
         },
         basedOnLeafId,

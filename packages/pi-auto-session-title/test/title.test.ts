@@ -23,7 +23,13 @@ describe("auto-session-title model requests", () => {
   test("follows the user's language while preserving established session focus and proper names", () => {
     expect(TITLE_SYSTEM_PROMPT).toContain('{"focus_summary":"...","title":"..."}');
     expect(TITLE_SYSTEM_PROMPT).toContain(
-      "Write both fields in the language of the user's natural-language prose in current_user_request",
+      "Write focus_summary and the title description in the language of the user's natural-language prose in current_user_request",
+    );
+    expect(TITLE_SYSTEM_PROMPT).toContain(
+      "Format the title as a Conventional Commits header: type(scope): description",
+    );
+    expect(TITLE_SYSTEM_PROMPT).toContain(
+      "scope is the primary subject's identifier from focus_summary",
     );
     expect(TITLE_SYSTEM_PROMPT).toContain(
       "Code, URLs, proper names, and the assistant's response are not language evidence",
@@ -44,10 +50,10 @@ describe("auto-session-title model requests", () => {
       "A package, repository, product, article, or tool being evaluated is the primary subject of a new session",
     );
     expect(TITLE_SYSTEM_PROMPT).toContain(
-      'outcome evaluating Context7 for Pi: "Context7 Evaluation"',
+      'outcome evaluating Context7 for Pi: "research(context7): evaluation for Pi"',
     );
     expect(TITLE_SYSTEM_PROMPT).toContain(
-      'is titled "Context7 评估", even if the assistant responds in English',
+      'is titled "research(context7): Pi 适用性评估", even if the assistant responds in English',
     );
     expect(TITLE_SYSTEM_PROMPT).toContain(
       "A component of an established objective remains subordinate even when discussed for several turns",
@@ -56,10 +62,10 @@ describe("auto-session-title model requests", () => {
       "Never preserve it when it names only a component of focus_summary",
     );
     expect(TITLE_SYSTEM_PROMPT).toContain(
-      'An English-language session building Meridian\'s synchronization system remains "Meridian Sync" while discussing its revision DAG, RPC layer, and notification WebSockets',
+      'An English-language session building Meridian\'s synchronization system remains "feat(meridian): sync system" while discussing its revision DAG, RPC layer, and notification WebSockets',
     );
     expect(TITLE_SYSTEM_PROMPT).toContain(
-      'keeps the same focus with the Chinese title "API 认证重构"',
+      'keeps the same focus with the Chinese title "refactor(api): 认证层"',
     );
   });
 
@@ -134,11 +140,11 @@ describe("auto-session-title model requests", () => {
           return prompts.length < 3
             ? JSON.stringify({
                 focus_summary: "Evaluate Context7 for Pi.",
-                title: "Alex Project",
+                title: "chore(alex): project",
               })
             : JSON.stringify({
                 focus_summary: "Evaluate Context7 for Pi.",
-                title: "Context7 Evaluation",
+                title: "research(context7): evaluation",
               });
         },
       });
@@ -150,7 +156,7 @@ describe("auto-session-title model requests", () => {
         { messageType: "user", prompt: "Would Context7 help Pi?" },
         ctx,
       );
-      while (sessionName !== "Alex Project") await delay(1);
+      while (sessionName !== "chore(alex): project") await delay(1);
 
       entries.push(
         { type: "message", message: { role: "user", content: "Would Context7 help Pi?" } },
@@ -176,13 +182,13 @@ describe("auto-session-title model requests", () => {
         previous_session_title: null,
         working_directory_hint: null,
       });
-      expect(appliedTitles).toEqual(["Alex Project"]);
+      expect(appliedTitles).toEqual(["chore(alex): project"]);
       const savedState = entries.find(
         (entry) => entry.customType === "auto-session-title-state-v2",
       )?.data;
       expect(savedState).toMatchObject({
         focusSummary: "Evaluate Context7 for Pi.",
-        title: "Alex Project",
+        title: "chore(alex): project",
       });
       expect(savedState).not.toHaveProperty("turnSummary");
 
@@ -202,7 +208,7 @@ describe("auto-session-title model requests", () => {
 
       expect(prompts[2]).toMatchObject({
         is_new_session: false,
-        previous_session_title: "Alex Project",
+        previous_session_title: "chore(alex): project",
         working_directory_hint: null,
         session_anchor: "Evaluate Context7 for Pi.",
         previous_focus: "Evaluate Context7 for Pi.",
@@ -222,9 +228,17 @@ describe("auto-session-title model requests", () => {
     expect(normalizeTitle(`Screenshot ${path}`)).toBeUndefined();
     expect(normalizeTitle("~/Desktop/screenshot.png")).toBeUndefined();
     expect(normalizeTitle("src/session-title.ts")).toBeUndefined();
-    expect(normalizeTitle("Pi Tab Title")).toBe("Pi Tab Title");
-    expect(normalizeTitle("自动命名配置")).toBe("自动命名配置");
-    expect(normalizeTitle("Context7 评估")).toBe("Context7 评估");
+    expect(normalizeTitle("feat(pi-tab): title sync")).toBe("feat(pi-tab): title sync");
+    expect(normalizeTitle("Docs(context7) ：Pi 适用性评估")).toBe("docs(context7): Pi 适用性评估");
+    expect(normalizeTitle("chore:自动命名配置")).toBe("chore: 自动命名配置");
+    expect(normalizeTitle("ops(kvm): 构建机环境")).toBe("ops(kvm): 构建机环境");
+  });
+
+  test("rejects titles that are not Conventional Commits headers", () => {
+    expect(normalizeTitle("Pi Tab Title")).toBeUndefined();
+    expect(normalizeTitle("wip(pi): title")).toBeUndefined();
+    expect(normalizeTitle("feat(pi tab): title")).toBeUndefined();
+    expect(normalizeTitle("feat:")).toBeUndefined();
   });
 
   test.each([undefined, "", " \n ", 42, null])(
@@ -329,7 +343,7 @@ describe("auto-session-title model requests", () => {
       "title context",
       "session-1",
       new AbortController().signal,
-      { requestAppleCompletion: async () => '{"title":"Local Apple Titles"}' },
+      { requestAppleCompletion: async () => '{"title":"chore: local titles"}' },
     );
 
     expect(result).toMatchObject({
@@ -360,7 +374,7 @@ describe("auto-session-title model requests", () => {
         new AbortController().signal,
         {
           requestCompletion: async (_complete, model) =>
-            model.id === "primary" ? invalidResponse : '{"title":"Valid Fallback"}',
+            model.id === "primary" ? invalidResponse : '{"title":"fix: valid fallback"}',
         },
       );
       expect(result?.index).toBe(1);
@@ -422,7 +436,7 @@ describe("auto-session-title model requests", () => {
         requestCompletion: async (_complete, model) => {
           requestCount += 1;
           if (model.id === "primary") throw new Error("temporarily unavailable");
-          return '{"focus_summary":"Maintain titles.","title":"Fallback Titles"}';
+          return '{"focus_summary":"Maintain titles.","title":"chore: fallback titles"}';
         },
       });
       handlers.get("session_start")?.({ reason: "startup" }, ctx);
@@ -460,6 +474,78 @@ describe("auto-session-title model requests", () => {
     expect(sessionTitleIsManual("Meridian Sync", "meridian   sync")).toBe(false);
     expect(sessionTitleIsManual("My Preferred Name", "Meridian Sync")).toBe(true);
     expect(sessionTitleIsManual("My Preferred Name", undefined)).toBe(true);
+  });
+
+  test("records a reload rename under the previous focus so it is not mistaken for manual", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "pi-auto-title-reload-test-"));
+    const previous = process.env.PI_CODING_AGENT_DIR;
+    try {
+      process.env.PI_CODING_AGENT_DIR = directory;
+      const handlers = new Map<string, (...args: any[]) => any>();
+      const entries: any[] = [
+        { type: "message", message: { role: "user", content: "Build Meridian sync" } },
+        { type: "message", message: { role: "assistant", content: "Built the sync layer." } },
+        {
+          type: "custom",
+          customType: "auto-session-title-state-v2",
+          data: {
+            version: 2,
+            focusSummary: "Build Meridian's sync system.",
+            title: "Meridian Sync",
+            createdAt: "2026-08-15T00:00:00.000Z",
+          },
+        },
+      ];
+      let sessionName: string | undefined = "Meridian Sync";
+      const pi = {
+        on(name: string, handler: (...args: any[]) => any) {
+          handlers.set(name, handler);
+        },
+        registerCommand() {},
+        registerFlag() {},
+        getFlag() {
+          return false;
+        },
+        getSessionName() {
+          return sessionName;
+        },
+        setSessionName(name: string) {
+          sessionName = name;
+        },
+        appendEntry(customType: string, data: unknown) {
+          entries.push({ type: "custom", customType, data });
+        },
+      };
+      const ctx = {
+        cwd: "/tmp/project",
+        hasUI: false,
+        modelRegistry: { find: (provider: string, model: string) => ({ provider, id: model }) },
+        sessionManager: {
+          getBranch: () => entries,
+          getEntries: () => entries,
+          getSessionId: () => "session-1",
+          getLeafId: () => "leaf-1",
+        },
+        ui: { notify() {} },
+      };
+      autoSessionTitle(pi as any, {
+        requestCompletion: async () =>
+          '{"focus_summary":"Drifted focus.","title":"feat(meridian): sync system"}',
+      });
+      handlers.get("session_start")?.({ reason: "reload" }, ctx);
+      while (entries.length < 4) await delay(1);
+
+      expect(sessionName).toBe("feat(meridian): sync system");
+      expect(entries.at(-1)?.data).toMatchObject({
+        focusSummary: "Build Meridian's sync system.",
+        title: "feat(meridian): sync system",
+      });
+      expect(sessionTitleIsManual(sessionName, entries.at(-1)?.data.title)).toBe(false);
+    } finally {
+      if (previous === undefined) delete process.env.PI_CODING_AGENT_DIR;
+      else process.env.PI_CODING_AGENT_DIR = previous;
+      rmSync(directory, { recursive: true, force: true });
+    }
   });
 
   test("keeps a restored manual title locked and clears focus on shutdown", async () => {
@@ -621,7 +707,7 @@ describe("auto-session-title model requests", () => {
     );
     expect(source).toContain("sampling: .greedy");
     expect(source).toContain("maximumResponseTokens: 256");
-    expect(source).toContain("Repeat(0...2)");
+    expect(source).toContain('"feat"; "fix"; "docs"');
     expect(source).toContain("SystemLanguageModel.default");
   });
 
@@ -676,7 +762,7 @@ describe("auto-session-title model requests", () => {
           complete: async (...args: any[]) => {
             calls.push(args);
             return {
-              content: [{ type: "text", text: '{"title":"Registry Title"}' }],
+              content: [{ type: "text", text: '{"title":"feat: registry title"}' }],
               stopReason: "stop",
             };
           },
@@ -689,7 +775,7 @@ describe("auto-session-title model requests", () => {
       new AbortController().signal,
     );
 
-    expect(result?.response).toBe('{"title":"Registry Title"}');
+    expect(result?.response).toBe('{"title":"feat: registry title"}');
     expect(calls).toHaveLength(1);
     expect(calls[0]?.[0]).toBe(model);
     expect(calls[0]?.[2]).toMatchObject({ reasoning: "high", sessionId: "session-1:title" });
