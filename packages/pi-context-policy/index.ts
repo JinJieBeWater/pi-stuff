@@ -27,7 +27,14 @@ export function registerPolicy(
   pi.on("before_agent_start", (event) => {
     for (const block of config.sections ?? defaultSections) {
       if (matchesEnv(block.whenEnv, env)) {
-        event.systemPromptOptions.sections[`context-policy-${block.id}`] = block.text;
+        const key = `context-policy-${block.id}`;
+        const options = event.systemPromptOptions;
+        // A legacy systemPrompt return freezes the request text, so later sections must join it.
+        if (options.forceSystemPrompt !== undefined) {
+          const tagged = `<${key}>\n${block.text}\n</${key}>`;
+          if (!options.forceSystemPrompt.includes(tagged))
+            options.forceSystemPrompt += `\n\n${tagged}`;
+        } else options.sections[key] = block.text;
         // Core terminals can inherit legacy HERDR_* markers; defaults select one backend.
         if (config.sections === undefined) break;
       }

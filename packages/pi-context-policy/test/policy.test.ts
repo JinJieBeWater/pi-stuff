@@ -24,6 +24,23 @@ function harness(value: unknown, env: NodeJS.ProcessEnv = {}) {
   };
 }
 
+test("a forced system prompt receives the section text once", () => {
+  let handler: ((event: any) => void) | undefined;
+  registerPolicy(
+    {
+      on: (_name: string, callback: typeof handler) => (handler = callback),
+    } as unknown as ExtensionAPI,
+    parsePolicy({ sections: [{ id: "team", text: "team rules" }] }),
+  );
+  const event = { systemPromptOptions: { sections: {}, forceSystemPrompt: "frozen" } };
+  handler?.(event);
+  handler?.(event);
+  expect(event.systemPromptOptions).toEqual({
+    sections: {},
+    forceSystemPrompt: "frozen\n\n<context-policy-team>\nteam rules\n</context-policy-team>",
+  });
+});
+
 test("outside Herdr, disabled and empty policies do nothing", () => {
   expect(harness({})({ existing: "keep" })).toEqual({ existing: "keep" });
   expect(harness({ enabled: false, sections: [{ id: "x", text: "unused" }] })()).toEqual({});
