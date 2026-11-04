@@ -14,22 +14,8 @@ struct TitleResponse {
     let focus_summary: String
 
     @Guide(Regex {
-        ChoiceOf {
-            "feat"; "fix"; "docs"; "style"; "refactor"; "perf"
-            "test"; "build"; "ci"; "chore"; "revert"; "research"; "ops"
-        }
-        Optionally {
-            "("
-            OneOrMore(.word)
-            ZeroOrMore {
-                "-"
-                OneOrMore(.word)
-            }
-            ")"
-        }
-        ": "
         OneOrMore(.word)
-        Repeat(0...7) {
+        Repeat(0...4) {
             " "
             OneOrMore(.word)
         }
