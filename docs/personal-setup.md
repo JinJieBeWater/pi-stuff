@@ -75,6 +75,16 @@ angristan 集合的启用入口：
 
 共享和 Pi 专属目录中的其他 Skills 仍由各自来源维护；本页不复制完整 Skill 目录。
 
+### tstack：按需加载
+
+2026-11-04 安装 [t3dotgg/tstack](https://github.com/t3dotgg/tstack)，源码位于 `~/.local/share/agent-sources/tstack`，安装时提交为 `1085050f3baed1ac724caa4a8166145fb2ac88af`。保留上游文件和 MIT 许可，不修改工作流。
+
+`~/.agents/skills/` 下分别软链到源码的 `skills/<name>`：`full-send`、`full-stop`、`sol-loop`、`takeover`、`modernize`、`leaving-pr-comments`，以及依赖项 `file-pr`、`babysit-pr`。不注册 `council`，也不替换现有 `pr` Skill。
+
+这八项不加入 `pi-skill-discovery.json` 的 `coreSkills`：目录元数据通过 `skill_search` 按需发现，正文使用时读取，仍可显式 `/skill:<name>`。这里的延迟加载不是定时等待，不增加启动或调用延时。安装后 `/reload` 或重开会话。
+
+运行前需要已认证的 `gh`、Python 3，以及可运行 Sol 的子 agent。`babysit-pr` 自带的 `pr-wait` 是按需启动的轮询进程，不安装后台服务；上游默认间隔 20 秒，支持 `--interval`。安装本身不授权 push、合并或启动监控。
+
 ## 本机自动发现的入口
 
 `~/.pi/agent/extensions/` 还有两个启用入口，不在上述 38 个包中：

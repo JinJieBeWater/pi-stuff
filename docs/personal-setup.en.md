@@ -75,6 +75,16 @@ These five packages explicitly set `extensions: []` in `settings.json`, disablin
 
 Other Skills in the shared and Pi-specific directories remain maintained at their respective sources. This page does not duplicate the full Skill catalog.
 
+### tstack: on-demand loading
+
+Installed [t3dotgg/tstack](https://github.com/t3dotgg/tstack) on 2026-11-04 at `~/.local/share/agent-sources/tstack`, from commit `1085050f3baed1ac724caa4a8166145fb2ac88af`. Upstream files, workflows, and the MIT license remain unchanged.
+
+Individual symlinks in `~/.agents/skills/` point to upstream `skills/<name>`: `full-send`, `full-stop`, `sol-loop`, `takeover`, `modernize`, `leaving-pr-comments`, and their dependencies `file-pr` and `babysit-pr`. `council` is not registered. The existing `pr` Skill is unchanged.
+
+These eight names stay outside `coreSkills` in `pi-skill-discovery.json`: metadata is discovered through `skill_search`, and instructions are read when needed. Explicit `/skill:<name>` invocation remains available. Deferred loading adds no timed startup or invocation delay. Run `/reload` or restart after installation.
+
+Runtime prerequisites are an authenticated `gh`, Python 3, and a Sol-capable subagent. The bundled `pr-wait` starts polling only when invoked; no background service is installed. Its upstream interval defaults to 20 seconds and accepts `--interval`. Installation does not authorize pushing, merging, or starting a watch.
+
 ## Locally discovered entries
 
 Two more enabled entries in `~/.pi/agent/extensions/` sit outside the 38 packages above:
