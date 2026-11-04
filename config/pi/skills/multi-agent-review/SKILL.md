@@ -2,7 +2,7 @@
 name: multi-agent-review
 description: "手动发起多 agent 代码审查：三路初审、独立 gate 复核，输出确认问题、待验证风险与审查缺口。"
 disable-model-invocation: true
-compatibility: "Pi with Shepherdr agents and a context-isolated reviewer profile; Git repository."
+compatibility: "Pi with Shepherdr agents and context-isolated reviewer-sol-max and reviewer-opus-high profiles; Git repository."
 ---
 
 ## 1. 固定输入
@@ -29,7 +29,7 @@ python3 <skill-dir>/scripts/validate-review.py capture --repo <repo> --worktree 
 
 ## 2. 准备独立审查
 
-先单独调用 Shepherdr `agents` 的发现入口，读取实时契约；Code Mode 使用 `await tools.agents()`。确认有 `reviewer` profile 且 `share_context: false`；缺失时报告阻塞，不改配置，也不换成实现型 profile。模型与 thinking 服从现有 profile。
+先单独调用 Shepherdr `agents` 的发现入口，读取实时契约；Code Mode 使用 `await tools.agents()`。确认有 `reviewer-sol-max` 和 `reviewer-opus-high` 两个 profile，且都是 `share_context: false`；任一缺失时报告阻塞，不改配置，也不换成实现型 profile 或另一个 reviewer。模型与 thinking 服从现有 profile。
 
 给每个新 worker 相同的仓库、固定 SHA、范围、完整变更概况、捕获 diff 路径、相关规范和已有日志。大改动先给 stat/name-status，再分配详细 diff 路径；每路负责其视角下的全部改动，按需追踪跨文件调用方。只传事实与验收标准，不传主 agent 的实现辩护或其他初审结论。
 
@@ -43,19 +43,19 @@ python3 <skill-dir>/scripts/validate-review.py capture --repo <repo> --worktree 
 
 ## 3. 三路并行初审
 
-用三个新 `reviewer`，分别只分配一个视角：
+启动三个新 worker，按下表的 profile 分别只分配一个视角：
 
-| 视角 / ID 前缀 | 任务                                                                                                   |
-| -------------- | ------------------------------------------------------------------------------------------------------ |
-| correctness    | 调用方、数据与错误契约、状态/异步生命周期、边界条件及行为回归。                                        |
-| rules          | 适用的仓库规范、代码注释约束、用户明确提供的需求。违反规范需引用具体规则；规范未要求的偏好不作为违规。 |
-| resources      | 权限与输入边界、敏感信息暴露、资源所有权/释放、无界工作量和实质性能退化。                              |
+| 视角 / ID 前缀 | Profile              | 任务                                                                                                   |
+| -------------- | -------------------- | ------------------------------------------------------------------------------------------------------ |
+| correctness    | `reviewer-sol-max`   | 调用方、数据与错误契约、状态/异步生命周期、边界条件及行为回归。                                        |
+| rules          | `reviewer-opus-high` | 适用的仓库规范、代码注释约束、用户明确提供的需求。违反规范需引用具体规则；规范未要求的偏好不作为违规。 |
+| resources      | `reviewer-opus-high` | 权限与输入边界、敏感信息暴露、资源所有权/释放、无界工作量和实质性能退化。                              |
 
 Code Mode 用 `Promise.allSettled` 并行发出三个 `blocking: true` 的 spawn 并等待全部结果；其他模式采用实时契约支持的并行调用。检查每一路的实际状态、短回复及报告文件是否非空、可读：空回复、报告缺失、blocked、失败和取消不是“无发现”。保留有效发现，同时记录未完成视角。
 
 ## 4. 新 gate 逐项复核
 
-初审全部返回或明确失败后，再启动一个全新的 `reviewer` 作 gate；不复用初审 worker，主 agent 不兼任 gate。
+初审全部返回或明确失败后，再启动一个全新的 `reviewer-sol-max` 作 gate；不复用初审 worker，主 agent 不兼任 gate。
 
 交给 gate 固定输入、适用规则、全部候选 ID 与对应初审报告路径、每路覆盖缺口。gate 自行读取全部报告原文并核对 ID 清单，不能仅依据短回复复核；候选仅作查证线索，不作可信结论。要求 gate 对每个 ID 恰好给出一种处置：
 
