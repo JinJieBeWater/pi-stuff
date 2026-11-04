@@ -1,0 +1,918 @@
+#!/usr/bin/env python3
+"""pr-wait: watch one GitHub or Gitea pull request. Read-only.
+
+  pr-wait <pr> [--repo owner/name] [--backend github|gitea] [--server URL]
+          [--until ready|green|any-change] [--interval 60] [--once]
+
+<pr> is a PR number or PR URL. github.com URLs are GitHub; URLs under a tea login
+or $GITEA_URL are Gitea; any other host needs --backend. A number needs --backend
+gitea and --repo for Gitea, plus --server unless exactly one instance is configured.
+Otherwise a number means GitHub, with the repo from --repo or the current checkout.
+
+--until
+  ready       every gate passes (default)
+  green       the ci gate passes; says nothing about review or merge rules
+  any-change  stop after the first poll that prints an event
+
+--once reads one snapshot and exits instead of waiting. A met target is read
+twice, a few seconds apart, because checks register shortly after a push.
+
+Exit codes
+  0  target met, a new event (any-change), or merged
+  1  needs action, a gate is unknown or needs a human, or closed; with --once,
+     target not met yet (pending included)
+  2  bad input, duplicate watcher, or an auth, transport, or response error
+  130 interrupted
+
+Stdout is one JSON object per line: event, verdict, backend, repo, pr, head,
+gates, links, plus author and where on feedback events. It never carries comment
+bodies or logs: open the links. Progress goes to stderr.
+
+event    snapshot, comment, review, thread, inline_comment, bot_finished,
+         check_failed, head_moved, gate_changed, a final verdict, or error
+verdict  pending, blocked, unknown, needs_human, green, ready, merged, closed
+gates    ci, review, merge, and on Gitea rules; each {status, reason}, where
+         status is pass, pending, blocked, unknown, needs_human, or not_required
+
+An unknown gate never counts as passed: no checks reported, unreadable rules, and
+403 or 404 replies all stay unknown. ready is not merge authority; the server's
+protection rules stay final. A review bot gates only after it appears on the PR.
+
+Gitea credentials: a tea login's token goes only to that login's exact url, and
+GITEA_TOKEN only to the exact root in $GITEA_URL. --server chooses which instance to
+read and never authorizes a token; other roots are read anonymously. No redirect is
+followed.
+
+State lives in ~/.local/state/pr-wait/, per backend, server, repo, and PR. A lock
+makes a second watcher exit at once. The first run records existing feedback and
+reports only what comes after; the snapshot still shows current blockers.
+"""
+
+from __future__ import annotations
+
+import argparse
+import fcntl
+import fnmatch
+import hashlib
+import http.client
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, NoReturn
+
+PASS, PENDING, BLOCKED, UNKNOWN, HUMAN, NOT_REQUIRED = "pass", "pending", "blocked", "unknown", "needs_human", "not_required"
+GATING_BOTS = ("greptile", "macroscope")
+ADVISORY_BOTS = ("coderabbit",)
+# CI and deploy bots report through checks. Their PR comments are status reports.
+STATUS_BOTS = ("github-actions", "vercel", "netlify", "railway", "cloudflare")
+STATE_DIR = Path.home() / ".local" / "state" / "pr-wait"
+# A state file older than this describes an old session. Start a fresh baseline
+# instead of replaying hours of comments as new events.
+STALE_STATE_SECONDS = 6 * 3600
+MAX_FAILED_POLLS = 10
+MAX_BACKOFF_SECONDS = 900
+CONFIRM_SECONDS = 5
+MAX_PAGES = 200
+TRANSIENT = re.compile(
+    r"HTTP (5\d\d|429)|rate limit|timed? ?out|connection (reset|refused)|EOF|"
+    r"temporar|could not resolve host|TLS handshake|Something went wrong",
+    re.IGNORECASE,
+)
+FAILED = ("fail", "cancel")
+# Duplicate names (push and pull_request runs of one job) collapse to the worst bucket.
+RANK = {"fail": 4, "cancel": 3, "pending": 2, "pass": 1, "skipping": 0}
+GITEA_BUCKETS = {"success": "pass", "skipped": "skipping", "pending": "pending", "error": "fail", "failure": "fail", "warning": "fail"}
+# Protection clauses this watcher cannot evaluate from the API.
+GITEA_UNMODELED = ("block_on_official_review_requests", "block_on_codeowner_reviews", "require_signed_commits", "protected_file_patterns")
+
+CONTEXTS = """
+contexts(first: 100, after: $after) {
+  pageInfo { hasNextPage endCursor }
+  nodes {
+    __typename
+    ... on CheckRun { name status conclusion detailsUrl isRequired(pullRequestNumber: $number) }
+    ... on StatusContext { context state targetUrl isRequired(pullRequestNumber: $number) }
+  }
+}
+"""
+QUERY = """
+query($owner: String!, $name: String!, $number: Int!, $after: String) {
+  viewer { login }
+  repository(owner: $owner, name: $name) {
+    pullRequest(number: $number) {
+      url state isDraft headRefOid baseRefName mergeStateStatus reviewDecision
+      author { login }
+      baseRef { target { oid } }
+      commits(last: 1) { nodes { commit { id oid statusCheckRollup { %s } } } }
+      comments(last: 100) { nodes { id url body author { login __typename } } }
+      reviews(last: 100) {
+        nodes { id url state body commit { oid } author { login __typename } }
+      }
+      reviewThreads(last: 100) {
+        pageInfo { hasPreviousPage }
+        nodes {
+          isResolved path line
+          comments(first: 100) { nodes { id url author { login __typename } } }
+        }
+      }
+    }
+  }
+}
+""" % CONTEXTS
+MORE_CONTEXTS = """
+query($id: ID!, $number: Int!, $after: String) {
+  node(id: $id) { ... on Commit { statusCheckRollup { %s } } }
+}
+""" % CONTEXTS
+
+Json = dict[str, Any]
+
+
+class Transient(Exception):
+    """Worth another poll: network trouble, rate limits, a PR moving mid-read."""
+
+    def __init__(self, message: str, retry_after: int = 0) -> None:
+        super().__init__(message)
+        self.retry_after = retry_after
+
+
+class Fatal(Exception):
+    pass
+
+
+class HttpRefused(Fatal):
+    """The server answered 4xx. Fatal for the PR itself, an unknown gate elsewhere."""
+
+
+@dataclass
+class Target:
+    backend: str
+    server: str
+    repo: str
+    pr: int
+
+
+@dataclass
+class Event:
+    key: str
+    event: str
+    author: str | None = None
+    where: str | None = None
+    link: str | None = None
+
+
+@dataclass
+class Snapshot:
+    state: str  # open, merged, or closed
+    url: str
+    head: str = ""
+    base: str = ""
+    gates: dict[str, Json] = field(default_factory=dict)
+    events: list[Event] = field(default_factory=list)
+    links: list[str] = field(default_factory=list)
+
+
+def log(message: str) -> None:
+    print(f"pr-wait: {message}", file=sys.stderr, flush=True)
+
+
+def fail(message: str) -> NoReturn:
+    # Fatal messages go to stdout so a monitor shows the agent why it stopped.
+    print(json.dumps({"event": "error", "verdict": "error", "reason": message}), flush=True)
+    sys.exit(2)
+
+
+def gate(status: str, reason: str = "") -> Json:
+    return {"status": status, "reason": reason}
+
+
+def ci_gate(checks: dict[str, Json], required: list[str], known: bool = True, match: Any = str.__eq__) -> Json:
+    """Judge CI from the checks on one head. A required check with no result yet
+    is pending, and no checks at all is unknown, never green by omission."""
+    gated = [name for name in checks if not required or any(match(name, rule) for rule in required)]
+    missing = [rule for rule in required if not any(match(name, rule) for name in checks)]
+    failed = sorted(name for name in gated if checks[name]["bucket"] in FAILED)
+    pending = sorted(name for name in gated if checks[name]["bucket"] == "pending") + sorted(missing)
+    if failed:
+        return gate(BLOCKED, "failed: " + ", ".join(failed))
+    if pending:
+        return gate(PENDING, "waiting for: " + ", ".join(pending))
+    if not gated:
+        return gate(UNKNOWN, "no checks reported on this head")
+    if not known:
+        return gate(UNKNOWN, f"{len(gated)} checks pass, but the required set is unreadable")
+    return gate(PASS, f"{len(gated)} checks pass")
+
+
+def failed_checks(checks: dict[str, Json], required: list[str], head: str, match: Any = str.__eq__) -> list[Event]:
+    return [
+        Event(f"fail:{head}:{name}:{c['link']}", "check_failed", where=name, link=c["link"])
+        for name, c in sorted(checks.items())
+        if c["bucket"] in FAILED and (not required or any(match(name, rule) for rule in required))
+    ]
+
+
+def bot_name(text: str | None) -> str | None:
+    """Which review bot a login or check name belongs to, if any."""
+    lowered = (text or "").lower()
+    return next((bot for bot in GATING_BOTS + ADVISORY_BOTS if bot in lowered), None)
+
+
+def who(node: Json) -> tuple[str, bool]:
+    author = node.get("author") or {}
+    return author.get("login") or "ghost", author.get("__typename") == "Bot"
+
+
+class GitHub:
+    def __init__(self, target: Target) -> None:
+        self.repo, self.pr = target.repo, target.pr
+        self.owner, self.name = target.repo.split("/")
+        host = urllib.parse.urlsplit(target.server).hostname
+        self.env = {**os.environ, "GH_HOST": host} if host != "github.com" else None
+        self.required: dict[tuple[str, str], tuple[set[str], bool]] = {}
+
+    def gh(self, args: list[str]) -> str:
+        """Run gh. Retries transient failures (HTTP 5xx or 429, network) with backoff."""
+        delay = 2
+        for attempt in range(5):
+            try:
+                proc = subprocess.run(["gh", *args], capture_output=True, text=True, env=self.env)
+            except OSError as error:
+                raise Fatal(f"cannot run gh: {error}") from None
+            if proc.returncode == 0:
+                return proc.stdout
+            lines = proc.stderr.strip().splitlines()
+            message = lines[-1] if lines else f"gh exited {proc.returncode}"
+            if not TRANSIENT.search(proc.stderr):
+                raise Fatal(message)
+            if attempt == 4:
+                raise Transient(message)
+            log(f"gh {' '.join(args[:2])}: {message}; retry in {delay}s")
+            time.sleep(delay)
+            delay *= 2
+        raise AssertionError("unreachable")
+
+    def graphql(self, query: str, **fields: str) -> Json:
+        args = ["api", "graphql", "-f", f"query={query}", "-F", f"number={self.pr}"]
+        for key, value in fields.items():
+            args += ["-f", f"{key}={value}"]
+        return json.loads(self.gh(args))["data"]
+
+    def required_checks(self, base: str, head: str) -> tuple[set[str], bool]:
+        """Required check names for the base branch. Knowing them up front means a
+        required check that has not started yet counts as pending."""
+        if (base, head) in self.required:
+            return self.required[(base, head)]
+        branch = urllib.parse.quote(base, safe="/")
+        sources = (
+            (
+                f"repos/{self.repo}/rules/branches/{branch}",
+                '.[] | select(.type == "required_status_checks") | .parameters.required_status_checks[].context',
+            ),
+            (f"repos/{self.repo}/branches/{branch}/protection/required_status_checks", ".contexts[]?, .checks[]?.context"),
+        )
+        names: set[str] = set()
+        known = True
+        for path, jq in sources:
+            try:
+                names.update(line for line in self.gh(["api", path, "--jq", jq]).splitlines() if line)
+            except Fatal as error:
+                if "HTTP 404" not in str(error):  # 404 means no protection, which is normal
+                    log(f"could not read required checks from {path}: {error}")
+                    known = False
+        self.required[(base, head)] = names, known
+        return names, known
+
+    def contexts(self, commit: Json) -> tuple[dict[str, Json], set[str]]:
+        checks: dict[str, Json] = {}
+        flagged: set[str] = set()
+        rollup = commit.get("statusCheckRollup")
+        while rollup:
+            page = rollup["contexts"]
+            for node in page["nodes"]:
+                if node["__typename"] == "CheckRun":
+                    name, bucket, link = node["name"], check_bucket(node), node["detailsUrl"]
+                else:
+                    name, bucket, link = node["context"], status_bucket(node["state"]), node["targetUrl"]
+                if node["isRequired"]:
+                    flagged.add(name)
+                current = checks.get(name)
+                if current is None or RANK[bucket] > RANK[current["bucket"]]:
+                    checks[name] = {"bucket": bucket, "link": link}
+            if not page["pageInfo"]["hasNextPage"]:
+                break
+            # Later pages hang off the commit node, so they stay on this head.
+            data = self.graphql(MORE_CONTEXTS, id=commit["id"], after=page["pageInfo"]["endCursor"])
+            rollup = data["node"]["statusCheckRollup"]
+        return checks, flagged
+
+    def fetch(self) -> Snapshot:
+        data = self.graphql(QUERY, owner=self.owner, name=self.name)
+        pr = data["repository"]["pullRequest"]
+        if pr["state"] != "OPEN":
+            return Snapshot(pr["state"].lower(), pr["url"])
+        head = pr["headRefOid"]
+        commit = pr["commits"]["nodes"][0]["commit"]
+        if commit["oid"] != head:
+            raise Transient(f"head moved while reading {self.repo}#{self.pr}")
+        merge_state = pr["mergeStateStatus"]
+        checks, flagged = self.contexts(commit)
+        names, known = self.required_checks(pr["baseRefName"], head)
+        required = sorted(names | flagged)
+        visible = {n: c for n, c in checks.items() if n in required or not bot_name(n)}
+        # Rules this token cannot read only matter when GitHub says a rule is blocking.
+        ci = ci_gate(visible, required, known or merge_state != "BLOCKED")
+        mine = {who(pr)[0], data["viewer"]["login"]}
+        events = failed_checks(visible, required, head)
+        review, unresolved, bot_events = self.review_gate(pr, checks, head)
+        events += bot_events + self.feedback(pr, mine)
+        snap = Snapshot("open", pr["url"], head, ((pr.get("baseRef") or {}).get("target") or {}).get("oid") or "", events=events)
+        snap.gates = {"ci": ci, "review": review, "merge": merge_gate(pr["isDraft"], merge_state)}
+        snap.links = [c["link"] for c in visible.values() if c["bucket"] in FAILED and c["link"]] + unresolved
+        return snap
+
+    def review_gate(self, pr: Json, checks: dict[str, Json], head: str) -> tuple[Json, list[str], list[Event]]:
+        threads = pr["reviewThreads"]
+        unresolved = [t["comments"]["nodes"][0]["url"] for t in threads["nodes"] if not t["isResolved"] and t["comments"]["nodes"]]
+        comments, reviews = pr["comments"]["nodes"], pr["reviews"]["nodes"]
+        waiting: list[str] = []
+        events: list[Event] = []
+        for bot in GATING_BOTS:
+            own_checks = [c for name, c in checks.items() if bot_name(name) == bot]
+            summaries = [c for c in comments if bot_name(who(c)[0]) == bot]
+            own_reviews = [r for r in reviews if bot_name(who(r)[0]) == bot]
+            if own_checks:
+                done = all(c["bucket"] != "pending" for c in own_checks)
+            else:
+                done = any((r.get("commit") or {}).get("oid") == head for r in own_reviews) or any(head[:7] in s["body"] for s in summaries)
+            if done:
+                events.append(Event(f"bot:{bot}:{head}", "bot_finished", author=bot))
+            elif own_checks or summaries or own_reviews:
+                waiting.append(bot)
+        if unresolved:
+            status = gate(BLOCKED, f"{len(unresolved)} unresolved threads")
+        elif pr["reviewDecision"] == "CHANGES_REQUESTED":
+            status = gate(BLOCKED, "changes requested")
+        elif threads["pageInfo"]["hasPreviousPage"]:
+            # shortcut: only the last 100 threads are read, page them if a real PR exceeds that.
+            status = gate(UNKNOWN, "more than 100 review threads")
+        elif waiting:
+            status = gate(PENDING, "waiting for: " + ", ".join(waiting))
+        elif pr["reviewDecision"] == "REVIEW_REQUIRED":
+            status = gate(HUMAN, "approval required")
+        else:
+            status = gate(PASS)
+        return status, unresolved, events
+
+    def feedback(self, pr: Json, mine: set[str]) -> list[Event]:
+        events = []
+        for comment in pr["comments"]["nodes"]:
+            login, is_bot = who(comment)
+            if login in mine or bot_name(login) or (is_bot and any(b in login for b in STATUS_BOTS)):
+                continue
+            events.append(Event(f"c:{comment['id']}", "comment", login, link=comment["url"]))
+        for review in pr["reviews"]["nodes"]:
+            login, is_bot = who(review)
+            if login not in mine and not is_bot and (review["state"] in ("APPROVED", "CHANGES_REQUESTED") or review["body"].strip()):
+                events.append(Event(f"c:{review['id']}", "review", login, review["state"].lower(), review["url"]))
+        for thread in pr["reviewThreads"]["nodes"]:
+            where = f"{thread['path']}:{thread['line']}" if thread["line"] else thread["path"]
+            for comment in thread["comments"]["nodes"]:
+                login, _ = who(comment)
+                if login not in mine:
+                    events.append(Event(f"c:{comment['id']}", "thread", login, where, comment["url"]))
+        return events
+
+
+def check_bucket(node: Json) -> str:
+    # Same buckets as gh pr checks.
+    if node["status"] != "COMPLETED":
+        return "pending"
+    return {
+        "SUCCESS": "pass", "SKIPPED": "skipping", "NEUTRAL": "skipping", "CANCELLED": "cancel",
+        "FAILURE": "fail", "TIMED_OUT": "fail", "ACTION_REQUIRED": "fail", "STARTUP_FAILURE": "fail",
+    }.get(node["conclusion"], "pending")
+
+
+def status_bucket(state: str) -> str:
+    return {"SUCCESS": "pass", "FAILURE": "fail", "ERROR": "fail"}.get(state, "pending")
+
+
+def merge_gate(draft: bool, merge_state: str) -> Json:
+    if draft or merge_state == "DRAFT":
+        return gate(HUMAN, "draft")
+    if merge_state == "DIRTY":
+        return gate(BLOCKED, "conflicts with the base branch")
+    if merge_state == "BEHIND":
+        return gate(BLOCKED, "behind the base branch")
+    if merge_state == "UNKNOWN":
+        return gate(PENDING, "GitHub is computing merge state")
+    if merge_state == "BLOCKED":
+        return gate(UNKNOWN, "a branch rule blocks merging")
+    return gate(PASS, merge_state)
+
+
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *args: Any) -> None:
+        return None  # a 3xx fails instead of carrying the token elsewhere
+
+
+OPENER = urllib.request.build_opener(NoRedirect)
+
+
+class Gitea:
+    def __init__(self, target: Target) -> None:
+        self.server, self.repo, self.pr = target.server, target.repo, target.pr
+        self.token = gitea_credentials().get(target.server)
+        self.me: str | None = None
+        self.me_read = False
+        self.prev_head: str | None = None
+
+    def get(self, path: str, query: dict[str, int] | None = None) -> tuple[Any, Any]:
+        url = f"{self.server}/api/v1/{path}" + (f"?{urllib.parse.urlencode(query)}" if query else "")
+        request = urllib.request.Request(url, headers={"Accept": "application/json"})
+        if self.token:
+            request.add_unredirected_header("Authorization", f"token {self.token}")
+        try:
+            with OPENER.open(request, timeout=30) as response:
+                return json.loads(response.read()), response.headers
+        except urllib.error.HTTPError as error:
+            if error.code == 429 or error.code >= 500:
+                wait = error.headers.get("Retry-After", "")
+                raise Transient(f"HTTP {error.code} GET {path}", int(wait) if wait.isdigit() else 0) from None
+            if error.code < 400:
+                raise Fatal(f"HTTP {error.code} GET {path}: redirects are not followed, check the server root") from None
+            raise HttpRefused(f"HTTP {error.code} GET {path}") from None
+        except (urllib.error.URLError, TimeoutError, ConnectionError, http.client.HTTPException) as error:
+            raise Transient(f"GET {path}: {error}") from None
+
+    def pages(self, path: str) -> list[Json]:
+        """Every row of a list. A short page does not end it: the server may cap limit."""
+        rows: list[Json] = []
+        for page in range(1, MAX_PAGES + 1):
+            batch, headers = self.get(path, {"page": page, "limit": 50})
+            if not isinstance(batch, list):
+                raise ValueError(f"{path} did not return a list")
+            total = headers.get("X-Total-Count") or ""
+            rows += batch
+            if not batch:
+                if total.isdigit() and len(rows) < int(total):
+                    raise Fatal(f"GET {path} ended at {len(rows)} of {total} rows")
+                return rows
+            if total.isdigit() and len(rows) >= int(total):
+                return rows
+        raise Fatal(f"GET {path} still returned rows after {MAX_PAGES} pages")
+
+    def optional(self, read: Any) -> Any:
+        """A refused read is an unknown gate, never an empty answer."""
+        try:
+            return read()
+        except HttpRefused as error:
+            log(str(error))
+            return None
+
+    def read_pr(self) -> Json:
+        try:
+            return self.get(f"repos/{self.repo}/pulls/{self.pr}")[0]
+        except HttpRefused as error:
+            hint = "; read anonymously because this root has no tea login and is not $GITEA_URL" if not self.token else ""
+            raise Fatal(f"cannot read {self.repo}#{self.pr} on {self.server}: {error}{hint}") from None
+
+    def login(self) -> str | None:
+        if not self.me_read and self.token:
+            user = self.optional(lambda: self.get("user")[0])
+            self.me = user["login"] if user else None
+            self.me_read = True
+        return self.me
+
+    def fetch(self) -> Snapshot:
+        # Everything below must describe one head and base, so reread until it holds still.
+        for _ in range(3):
+            pr = self.read_pr()
+            if pr.get("merged"):
+                return Snapshot("merged", pr["html_url"])
+            if pr["state"] != "open":
+                return Snapshot("closed", pr["html_url"])
+            snap = self.read_open(pr)
+            after = self.read_pr()
+            if after["head"]["sha"] == pr["head"]["sha"] and after["base"]["sha"] == pr["base"]["sha"]:
+                self.prev_head = snap.head
+                return snap
+        raise Transient(f"{self.repo}#{self.pr} kept moving while reading")
+
+    def read_open(self, pr: Json) -> Snapshot:
+        head, base_ref = pr["head"]["sha"], pr["base"]["ref"]
+        root = f"repos/{self.repo}"
+        branch = self.optional(lambda: self.get(f"{root}/branches/{urllib.parse.quote(base_ref, safe='/')}")[0])
+        statuses = self.optional(lambda: self.pages(f"{root}/commits/{head}/statuses"))
+        reviews = self.optional(lambda: self.pages(f"{root}/pulls/{self.pr}/reviews"))
+        comments = self.optional(lambda: self.pages(f"{root}/issues/{self.pr}/comments"))
+        inline, inline_known = [], reviews is not None
+        for review in reviews or []:
+            if review.get("comments_count"):
+                rows = self.optional(lambda: self.get(f"{root}/pulls/{self.pr}/reviews/{review['id']}/comments")[0])
+                inline += rows or []
+                inline_known = inline_known and rows is not None
+        mine = {(pr.get("user") or {}).get("login"), self.login()}
+
+        required, known = required_contexts(branch)
+        checks = latest_statuses(statuses or [])
+        ci = ci_gate(checks, required, known, fnmatch.fnmatchcase) if statuses is not None else gate(UNKNOWN, "commit statuses unreadable")
+        events = failed_checks(checks, required, head, fnmatch.fnmatchcase)
+        unresolved = unresolved_threads(inline)
+        events += self.feedback(comments or [], reviews or [], inline, mine)
+        snap = Snapshot("open", pr["html_url"], head, pr["base"]["sha"], events=events)
+        snap.gates = {
+            "ci": ci,
+            "review": review_gate(branch, reviews, unresolved, inline_known, comments is not None),
+            "merge": self.merge_gate(pr, head),
+            "rules": self.rules_gate(branch, pr),
+        }
+        snap.links = [c["link"] for c in checks.values() if c["bucket"] in FAILED and c["link"]] + unresolved
+        return snap
+
+    def feedback(self, comments: list[Json], reviews: list[Json], inline: list[Json], mine: set[Any]) -> list[Event]:
+        events = []
+        for comment in comments:
+            login = (comment.get("user") or {}).get("login") or "ghost"
+            if login not in mine:
+                events.append(Event(f"c:{comment['id']}", "comment", login, link=comment.get("html_url")))
+        for review in reviews:
+            login = (review.get("user") or {}).get("login") or "ghost"
+            if login not in mine and (review["state"] in ("APPROVED", "REQUEST_CHANGES") or (review.get("body") or "").strip()):
+                events.append(Event(f"r:{review['id']}", "review", login, review["state"].lower(), review.get("html_url")))
+        for comment in inline:
+            login = (comment.get("user") or {}).get("login") or "ghost"
+            if login not in mine:
+                line = comment.get("position") or comment.get("original_position")
+                events.append(Event(f"i:{comment['id']}", "inline_comment", login, f"{comment.get('path')}:{line}", comment.get("html_url")))
+        return events
+
+    def merge_gate(self, pr: Json, head: str) -> Json:
+        if pr.get("draft"):
+            return gate(HUMAN, "draft")
+        mergeable = pr.get("mergeable")
+        if mergeable is True:
+            return gate(PASS, "no conflicts")  # says nothing about CI, approvals, or rules
+        if mergeable is not False:
+            return gate(UNKNOWN, "mergeable field missing")
+        # false also covers a background check still running, so give it one poll.
+        if self.prev_head != head:
+            return gate(PENDING, "not mergeable yet: checking, conflicted, or WIP")
+        return gate(BLOCKED, "not mergeable: conflict, failed check, or WIP")
+
+    def rules_gate(self, branch: Json | None, pr: Json) -> Json:
+        if branch is None or not isinstance(branch.get("protected"), bool):
+            return gate(UNKNOWN, "base branch unreadable")
+        if not branch["protected"]:
+            return gate(NOT_REQUIRED, "base branch is not protected")
+        name = branch.get("effective_branch_protection_name")
+        rule = None
+        if name and self.token:
+            quoted = urllib.parse.quote(name, safe="")
+            rule = self.optional(lambda: self.get(f"repos/{self.repo}/branch_protections/{quoted}")[0])
+        if rule is None:
+            return gate(UNKNOWN, "base branch is protected and its full rule needs repo admin to read")
+        if rule.get("block_on_outdated_branch"):
+            merge_base = pr.get("merge_base")
+            if not merge_base:
+                return gate(UNKNOWN, "merge_base field missing")
+            if merge_base != pr["base"]["sha"]:
+                return gate(BLOCKED, "behind the base branch")
+        unmodeled = [clause for clause in GITEA_UNMODELED if rule.get(clause)]
+        if unmodeled:
+            return gate(UNKNOWN, "cannot evaluate: " + ", ".join(unmodeled))
+        return gate(PASS)
+
+
+def required_contexts(branch: Json | None) -> tuple[list[str], bool]:
+    """(required context patterns, whether that list is complete)."""
+    if branch is None or not isinstance(branch.get("protected"), bool):
+        return [], False
+    if not branch["protected"] or not branch.get("enable_status_check"):
+        return [], True
+    patterns = branch.get("status_check_contexts") or []
+    # Gitea compiles these with gobwas/glob; fnmatch agrees on * ? [] only.
+    simple = [p for p in patterns if not re.search(r"[{}\\]", p)]
+    return simple, len(simple) == len(patterns)
+
+
+def latest_statuses(statuses: list[Json]) -> dict[str, Json]:
+    """One row per context, the newest. The list holds every status ever posted.
+    shortcut: statuses are the only CI source, read Actions runs if a runner posts none."""
+    latest: dict[str, Json] = {}
+    for row in sorted(statuses, key=lambda s: s["id"]):
+        latest[row["context"]] = {"bucket": GITEA_BUCKETS.get(row["status"], "pending"), "link": row.get("target_url") or ""}
+    return latest
+
+
+def unresolved_threads(inline: list[Json]) -> list[str]:
+    """Gitea has no thread object. Its conversations group by file and signed line,
+    and resolving marks one comment, so a thread is judged by its oldest comment."""
+    threads: dict[tuple[Any, Any, Any], Json] = {}
+    for comment in sorted(inline, key=lambda c: c["id"]):
+        threads.setdefault((comment.get("path"), comment.get("position"), comment.get("original_position")), comment)
+    return [c.get("html_url") or "" for c in threads.values() if not c.get("resolver")]
+
+
+def review_gate(branch: Json | None, reviews: list[Json] | None, unresolved: list[str], inline_known: bool, comments_known: bool) -> Json:
+    latest: dict[str, Json] = {}
+    for review in sorted(reviews or [], key=lambda r: r["id"]):
+        if review["state"] in ("APPROVED", "REQUEST_CHANGES"):
+            latest[(review.get("user") or {}).get("login") or "ghost"] = review
+    # A stale rejection still blocks on Gitea; only dismissal clears it.
+    rejected = [login for login, r in latest.items() if r["state"] == "REQUEST_CHANGES" and not r.get("dismissed")]
+    if rejected:
+        return gate(BLOCKED, "changes requested by " + ", ".join(sorted(rejected)))
+    if unresolved:
+        return gate(BLOCKED, f"{len(unresolved)} unresolved inline conversations")
+    if reviews is None or not inline_known or not comments_known:
+        return gate(UNKNOWN, "reviews or comments unreadable")
+    if branch is None or not isinstance(branch.get("protected"), bool):
+        return gate(UNKNOWN, "required approvals unreadable")
+    needed = branch.get("required_approvals") or 0
+    # official matches the server's own count; ignoring stale ones can only under-count.
+    approvals = sum(1 for r in reviews if r["state"] == "APPROVED" and r.get("official") and not r.get("stale") and not r.get("dismissed"))
+    if approvals < needed:
+        return gate(HUMAN, f"{approvals} of {needed} current official approvals")
+    return gate(PASS)
+
+
+def decide(snap: Snapshot, until: str) -> str:
+    gates = {"ci": snap.gates["ci"]} if until == "green" else snap.gates
+    statuses = {g["status"] for g in gates.values()}
+    # Act on what is broken now, wait out what is moving, then hand off the rest.
+    for status in (BLOCKED, PENDING, UNKNOWN, HUMAN):
+        if status in statuses:
+            return status
+    return "green" if until == "green" else "ready"
+
+
+class Watcher:
+    def __init__(self, target: Target, adapter: Any, until: str, interval: int, once: bool) -> None:
+        self.target, self.adapter, self.until, self.interval, self.once = target, adapter, until, interval, once
+        self.path = STATE_DIR / f"{state_key(target)}.json"
+        state = self.load()
+        # First run for this PR: record what exists and report nothing.
+        self.baseline = state is None
+        self.state: Json = state or {"reported": [], "gates": {}, "head": None}
+        self.reported: set[str] = set(self.state["reported"])
+        self.first = True
+        self.prev_fingerprint: str | None = None
+        self.events = 0
+        self.fields: Json = {}
+
+    def load(self) -> Json | None:
+        try:
+            if time.time() - self.path.stat().st_mtime > STALE_STATE_SECONDS:
+                return None
+            return json.loads(self.path.read_text())
+        except (OSError, ValueError):
+            return None
+
+    def save(self) -> None:
+        self.state["reported"] = sorted(self.reported)
+        tmp = self.path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(self.state))
+        tmp.replace(self.path)
+
+    def say(self, event: str, **extra: Any) -> None:
+        print(json.dumps({"event": event, **self.fields, **extra}), flush=True)
+
+    def finish(self, code: int, event: str) -> NoReturn:
+        self.say(event)
+        self.save()
+        sys.exit(code)
+
+    def emit(self, item: Event) -> None:
+        """Print an event once per PR, across restarts."""
+        if item.key in self.reported:
+            return
+        self.reported.add(item.key)
+        if not self.baseline:
+            self.events += 1
+            details = {"author": item.author, "where": item.where}
+            self.say(item.event, **{k: v for k, v in details.items() if v}, links=[item.link] if item.link else [])
+
+    def handle(self, snap: Snapshot) -> None:
+        identity = {"backend": self.target.backend, "repo": self.target.repo, "pr": self.target.pr}
+        if snap.state != "open":
+            self.fields = {"verdict": snap.state, **identity, "links": [snap.url]}
+            self.finish(0 if snap.state == "merged" else 1, snap.state)
+        verdict = decide(snap, self.until)
+        self.fields = {"verdict": verdict, **identity, "head": snap.head, "gates": snap.gates, "links": [snap.url, *snap.links]}
+        self.events = 0
+        for item in snap.events:
+            self.emit(item)
+        statuses = {name: g["status"] for name, g in snap.gates.items()}
+        if not self.baseline:
+            if self.state["head"] not in (None, snap.head):
+                self.emit(Event(f"head:{snap.head}", "head_moved"))
+            changed = {n: s for n, s in statuses.items() if self.state["gates"].get(n) not in (None, s)}
+            if changed:
+                self.events += 1
+                self.say("gate_changed", changed=changed)
+        self.state["head"], self.state["gates"] = snap.head, statuses
+
+        # Checks and mergeability settle a few seconds after a push, so a verdict
+        # that ends the watch has to survive two identical reads.
+        fingerprint = json.dumps([snap.head, snap.base, snap.gates], sort_keys=True)
+        settled = fingerprint == self.prev_fingerprint
+        self.prev_fingerprint = fingerprint
+        met = verdict in ("green", "ready")
+        if self.until == "any-change":
+            if self.events:
+                self.save()
+                sys.exit(0)
+            if self.once:
+                self.finish(1, "snapshot")
+        elif verdict == BLOCKED or (self.once and not met):
+            self.finish(1, verdict if verdict != PENDING else "snapshot")
+        elif verdict != PENDING and settled:
+            self.finish(0 if met else 1, verdict)
+        if self.first and not self.once:
+            self.say("snapshot")
+
+    def run(self) -> NoReturn:
+        failures = 0
+        while True:
+            try:
+                self.handle(self.adapter.fetch())
+                failures = 0
+            except Transient as error:
+                failures += 1
+                log(f"poll failed ({failures}/{MAX_FAILED_POLLS}): {error}")
+                if self.once or failures >= MAX_FAILED_POLLS:
+                    fail(f"gave up after {failures} failed reads: {error}")
+                time.sleep(min(max(self.interval * 2**failures, error.retry_after), MAX_BACKOFF_SECONDS))
+                continue
+            except Fatal as error:
+                fail(str(error))
+            except (KeyError, IndexError, TypeError, ValueError, AttributeError) as error:
+                fail(f"unexpected response from the server: {error!r}")
+            self.save()
+            if self.baseline:
+                log(f"baseline recorded for {self.target.repo}#{self.target.pr}; reporting only new events")
+            self.baseline = self.first = False
+            time.sleep(CONFIRM_SECONDS if self.once else self.interval)
+
+
+def state_key(target: Target) -> str:
+    identity = f"{target.backend}\n{target.server}\n{target.repo}\n{target.pr}"
+    digest = hashlib.sha256(identity.encode()).hexdigest()[:16]
+    return f"{target.backend}__{target.repo.replace('/', '__')}__{target.pr}__{digest}"
+
+
+def lock(target: Target) -> Any:
+    """Hold a per-PR lock for the life of the process. The OS drops it on exit."""
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    handle = open(STATE_DIR / f"{state_key(target)}.lock", "a+")
+    try:
+        fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        handle.seek(0)
+        pid = handle.read().strip() or "unknown"
+        fail(f"pid {pid} already watches {target.repo}#{target.pr}. If no events reach you from it, run `kill {pid}` and start again.")
+    handle.seek(0)
+    handle.truncate()
+    handle.write(str(os.getpid()))
+    handle.flush()
+    return handle
+
+
+def normalize_root(raw: str) -> str:
+    try:
+        return parse_root(raw)
+    except ValueError:
+        fail(f"'{raw}' is not a server URL: use scheme://host[/subpath] without credentials")
+
+
+def parse_root(raw: str) -> str:
+    """scheme://host[:port][/subpath] in one spelling, so equal roots compare equal."""
+    parts = urllib.parse.urlsplit(raw.strip())
+    port = parts.port
+    if parts.scheme.lower() not in ("http", "https") or not parts.hostname or parts.username or parts.password or parts.query or parts.fragment:
+        raise ValueError(raw)
+    scheme = parts.scheme.lower()
+    host = parts.hostname.lower()
+    host = f"[{host}]" if ":" in host else host
+    netloc = host if port in (None, {"http": 80, "https": 443}[scheme]) else f"{host}:{port}"
+    return f"{scheme}://{netloc}{parts.path.rstrip('/')}"
+
+
+def tea_logins() -> dict[str, str]:
+    """{root: token} from tea's config, which already binds each token to one url.
+    shortcut: reads the flat login blocks tea writes, not general YAML (no stdlib parser)."""
+    xdg = os.environ.get("XDG_CONFIG_HOME")
+    paths = [Path(xdg) / "tea" if xdg else Path.home() / ".config" / "tea", Path.home() / "Library" / "Application Support" / "tea"]
+    logins: dict[str, str] = {}
+    for path in paths:
+        try:
+            text = (path / "config.yml").read_text()
+        except (OSError, ValueError):
+            continue
+        for block in re.split(r"^\s*-\s+name:", text, flags=re.MULTILINE)[1:]:
+            url = re.search(r"^\s*url:\s*[\"']?([^\s\"']+)", block, re.MULTILINE)
+            token = re.search(r"^\s*token:\s*[\"']?([^\s\"']+)", block, re.MULTILINE)
+            try:
+                if url:
+                    logins.setdefault(parse_root(url.group(1)), token.group(1) if token else "")
+            except ValueError:
+                continue
+    return logins
+
+
+def gitea_credentials() -> dict[str, str]:
+    """{root: token} for every configured instance. An explicit $GITEA_URL wins."""
+    credentials = tea_logins()
+    configured = os.environ.get("GITEA_URL")
+    if configured:
+        credentials[normalize_root(configured)] = os.environ.get("GITEA_TOKEN") or ""
+    return credentials
+
+
+def valid_repo(repo: str) -> str:
+    if not re.fullmatch(r"[\w.-]+/[\w.-]+", repo) or any(part in (".", "..") for part in repo.split("/")):
+        fail(f"'{repo}' is not owner/name")
+    return repo
+
+
+def parse_target(args: argparse.Namespace) -> Target:
+    raw = (args.pr or "").strip()
+    if not raw:
+        fail("missing PR number. Did a variable expand to nothing? Usage: pr-wait <pr> [--repo owner/name]")
+    server = normalize_root(args.server) if args.server else None
+    number = re.fullmatch(r"#?(\d+)", raw)
+    url = re.fullmatch(r"(https?://[^/\s?#]+(?:/[^\s?#]*?)?)/([\w.-]+/[\w.-]+)/(pull|pulls)/(\d+)(?:[/?#]\S*)?", raw)
+    backend, repo = args.backend, args.repo
+    if url:
+        root = normalize_root(url.group(1))
+        if server and server != root:
+            fail(f"--server {server} does not match the PR URL's root {root}")
+        if repo and repo != url.group(2):
+            fail(f"--repo {repo} does not match the PR URL's repo {url.group(2)}")
+        server, repo, pr = root, url.group(2), int(url.group(4))
+        if not backend:
+            if urllib.parse.urlsplit(root).hostname == "github.com":
+                backend = "github"
+            elif root in gitea_credentials():
+                backend = "gitea"
+            else:
+                fail(f"cannot tell what {root} runs: pass --backend github or gitea")
+        if url.group(3) != {"github": "pull", "gitea": "pulls"}[backend]:
+            fail(f"'{raw}' is not a {backend} PR URL")
+        if backend == "github" and urllib.parse.urlsplit(root).path:
+            fail(f"{root} is not a GitHub host")
+    elif number:
+        pr = int(number.group(1))
+        if not backend and server:
+            fail("--server needs --backend github or gitea")
+        backend = backend or "github"
+        if backend == "gitea":
+            roots = list(gitea_credentials())
+            server = server or (roots[0] if len(roots) == 1 else None)
+            if not server or not repo:
+                fail("a Gitea PR number needs --repo, and --server unless exactly one instance is configured")
+    else:
+        fail(f"'{raw}' is not a PR number or PR URL")
+    if pr <= 0:
+        fail(f"'{raw}' is not a valid PR number")
+    if backend == "github":
+        server = server or "https://github.com"
+        if not repo:
+            try:
+                repo = GitHub(Target(backend, server, "x/x", pr)).gh(["repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"]).strip()
+            except (Fatal, Transient) as error:
+                fail(f"no --repo given and the current directory has no GitHub repo ({error})")
+    return Target(backend, server, valid_repo(repo), pr)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(prog="pr-wait", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("pr", nargs="?", help="PR number or URL")
+    parser.add_argument("--repo", help="owner/name (default: from the URL or, on GitHub, the current checkout)")
+    parser.add_argument("--backend", choices=("github", "gitea"))
+    parser.add_argument("--server", help="instance root, with any subpath. Never authorizes sending a token")
+    parser.add_argument("--until", choices=("ready", "green", "any-change"), default="ready")
+    parser.add_argument("--interval", type=int, default=60, help="seconds between polls (default 60, min 5)")
+    parser.add_argument("--once", action="store_true", help="read one snapshot and exit")
+    args = parser.parse_args()
+    target = parse_target(args)
+    _lock = lock(target)
+    adapter = GitHub(target) if target.backend == "github" else Gitea(target)
+    Watcher(target, adapter, args.until, max(args.interval, 5), args.once).run()
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        sys.exit(130)

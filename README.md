@@ -26,6 +26,7 @@
 | ---------------------------------------- | -------------------------------------------- |
 | [show-me（Pi）](skills/pi/show-me)       | 统一选择代码草图、原生 Mermaid/chart 或 HTML |
 | [show-me（通用）](skills/shared/show-me) | 供其他 agent 显式调用的通用版本              |
+| [babysit-pr](skills/shared/babysit-pr)   | 跟进 GitHub / Gitea PR 的 CI 与审查直到就绪  |
 
 Pi 包只注册 Pi 版；通用版不参与 Pi 包发现。两版的调用方式、第三方依赖和来源见 [Skills 说明](skills/README.md)。
 

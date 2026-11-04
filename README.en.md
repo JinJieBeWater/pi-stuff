@@ -26,6 +26,7 @@ My [Pi](https://github.com/earendil-works/pi) extensions, custom Skills, and per
 | ----------------------------------------- | ------------------------------------------------------------- |
 | [show-me (Pi)](skills/pi/show-me)         | Choose between code sketches, native Mermaid/charts, and HTML |
 | [show-me (shared)](skills/shared/show-me) | A version for explicit invocation by other agents             |
+| [babysit-pr](skills/shared/babysit-pr)    | Follow a GitHub or Gitea PR through CI and review until ready |
 
 The Pi package registers only the Pi version. The shared version is excluded from Pi package discovery. See the [Skills guide](skills/README.en.md) for invocation, dependencies, and attribution.
 

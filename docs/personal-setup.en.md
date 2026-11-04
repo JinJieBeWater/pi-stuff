@@ -79,11 +79,13 @@ Other Skills in the shared and Pi-specific directories remain maintained at thei
 
 Installed [t3dotgg/tstack](https://github.com/t3dotgg/tstack) on 2026-11-04 at `~/.local/share/agent-sources/tstack`, from commit `1085050f3baed1ac724caa4a8166145fb2ac88af`. Upstream files, workflows, and the MIT license remain unchanged.
 
-Individual symlinks in `~/.agents/skills/` point to upstream `skills/<name>`: `full-send`, `full-stop`, `sol-loop`, `takeover`, `modernize`, `leaving-pr-comments`, and their dependencies `file-pr` and `babysit-pr`. `council` is not registered. The existing `pr` Skill is unchanged.
+Individual symlinks in `~/.agents/skills/` point to upstream `skills/<name>`: `full-send`, `full-stop`, `sol-loop`, `takeover`, `modernize`, `leaving-pr-comments`, and their dependency `file-pr`. `council` is not registered. The existing `pr` Skill is unchanged.
+
+`babysit-pr` uses this repository's GitHub/Gitea variant: `~/.agents/skills/babysit-pr` links to [`skills/shared/babysit-pr`](../skills/shared/babysit-pr), derived from upstream under its MIT license. The upstream files stay untouched in the source directory. Gitea instances and tokens come from `tea` logins, and a token goes only to its exact root.
 
 These eight names stay outside `coreSkills` in `pi-skill-discovery.json`: metadata is discovered through `skill_search`, and instructions are read when needed. Explicit `/skill:<name>` invocation remains available. Deferred loading adds no timed startup or invocation delay. Run `/reload` or restart after installation.
 
-Runtime prerequisites are an authenticated `gh`, Python 3, and a Sol-capable subagent. The bundled `pr-wait` starts polling only when invoked; no background service is installed. Its upstream interval defaults to 20 seconds and accepts `--interval`. Installation does not authorize pushing, merging, or starting a watch.
+Runtime prerequisites are an authenticated `gh`, Python 3, and a Sol-capable subagent. The bundled read-only `pr-wait` starts polling only when invoked; no background service is installed. Its interval defaults to 60 seconds and accepts `--interval`. Other tstack workflows keep GitHub-only steps; only `babysit-pr` supports Gitea. Installation does not authorize pushing, merging, or starting a watch.
 
 ## Locally discovered entries
 
