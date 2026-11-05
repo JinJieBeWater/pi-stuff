@@ -1,0 +1,22 @@
+{
+  "name": "@jinjiebewater/pi-herdr-theme",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Generate a Pi theme from the current Herdr App theme and follow its changes",
+  "keywords": [
+    "pi-package"
+  ],
+  "type": "module",
+  "scripts": {
+    "test": "vp test run --config ../../vite.config.ts --dir .",
+    "check-types": "vp exec tsc"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}

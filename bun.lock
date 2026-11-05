@@ -75,6 +75,13 @@
         "@earendil-works/pi-coding-agent": "*",
       },
     },
+    "packages/pi-herdr-theme": {
+      "name": "@jinjiebewater/pi-herdr-theme",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@earendil-works/pi-coding-agent": "*",
+      },
+    },
     "packages/pi-lovely-mermaid": {
       "name": "@jinjiebewater/pi-lovely-mermaid",
       "version": "0.1.0",
@@ -181,6 +188,8 @@
     "@jinjiebewater/pi-herdr-session-move": ["@jinjiebewater/pi-herdr-session-move@workspace:packages/pi-herdr-session-move"],
 
     "@jinjiebewater/pi-herdr-tab-title": ["@jinjiebewater/pi-herdr-tab-title@workspace:packages/pi-herdr-tab-title"],
+
+    "@jinjiebewater/pi-herdr-theme": ["@jinjiebewater/pi-herdr-theme@workspace:packages/pi-herdr-theme"],
 
     "@jinjiebewater/pi-lovely-mermaid": ["@jinjiebewater/pi-lovely-mermaid@workspace:packages/pi-lovely-mermaid"],
 

@@ -14,6 +14,7 @@ My [Pi](https://github.com/earendil-works/pi) extensions, custom Skills, and per
 | [pi-borderless-tables](packages/pi-borderless-tables/README.en.md)   | Display aligned tables without borders                                              |
 | [pi-herdr-session-move](packages/pi-herdr-session-move/README.en.md) | Move the current Pi conversation to another existing directory                      |
 | [pi-herdr-tab-title](packages/pi-herdr-tab-title/README.en.md)       | Sync Pi tab names in Herdr Core/App and the legacy TUI                              |
+| [pi-herdr-theme](packages/pi-herdr-theme/README.en.md)               | Make Pi follow the Herdr App theme, palette included                                |
 | [pi-auto-session-title](packages/pi-auto-session-title/README.en.md) | Maintain session titles with language selection, custom prompts, and model fallback |
 | [pi-drop-session](packages/pi-drop-session/README.en.md)             | Start a new session and send the previous session file to the trash                 |
 | [pi-context-policy](packages/pi-context-policy/README.en.md)         | Select prompts, managed extensions, tools, and Skills for the current environment   |

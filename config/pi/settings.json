@@ -87,6 +87,7 @@
     "../../my/pi-stuff/packages/pi-borderless-tables",
     "../../my/pi-stuff/packages/pi-herdr-session-move",
     "../../my/pi-stuff/packages/pi-herdr-tab-title",
+    "../../my/pi-stuff/packages/pi-herdr-theme",
     "../../my/pi-stuff/packages/pi-drop-session",
     "../../my/pi-stuff/packages/pi-context-policy",
     "../../my/pi-stuff/packages/pi-tool-exposure",
@@ -117,7 +118,7 @@
     "imageWidthCells": 48,
     "showTerminalProgress": true
   },
-  "theme": "catppuccin-mocha",
+  "theme": "herdr",
   "treeFilterMode": "all",
   "tuiMode": "fullscreen",
   "markdown": {
