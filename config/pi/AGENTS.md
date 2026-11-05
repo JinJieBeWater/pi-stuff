@@ -1,7 +1,7 @@
 ## 沟通与表达
 
 - 默认中文；每轮选择最简洁有效的表达形式。面向用户默认直接在对话中回答；agent 间交接已有长正文文件时，只回简要结论和路径。
-- For architecture, relationships, flows, or any visual, first read and follow `~/.pi/agent/skills/show-me/SKILL.md` unless its full text is in context.
+- 解释机制或比较方案时，主动使用 show-me；上下文里没有全文就先读 `~/.pi/agent/skills/show-me/SKILL.md`。
 
 ## 实施与权限
 
