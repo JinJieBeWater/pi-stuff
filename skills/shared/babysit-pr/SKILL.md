@@ -25,7 +25,10 @@ python3 <skill-dir>/scripts/pr-wait https://git.example.com/team/app/pulls/12 --
 
 - One watcher per PR, run by the session that owns the PR. GitHub inside T3 Code: its native watcher (see the GitHub reference). Everywhere else, and always for Gitea: `pr-wait` without `--once`.
 - Several PRs: pass them all to one `pr-wait <pr> <pr>... --until any-change`. It stops at the first event from any PR; handle that PR by the `repo` and `pr` on the line, then rerun without PRs that merged or closed.
-- Claude Code: run it under the Monitor tool with a long timeout, so each stdout line wakes you. Pi, Codex, others: one long-running command whose session you keep polling, or `--until any-change` rerun after each event. Stdout alone does not wake an idle Pi session, so keep the turn alive while waiting. The watcher is the only polling: no hand-written sleep loops, cron jobs, or daemons.
+- Claude Code: run it under the Monitor tool with a long timeout, so each stdout line wakes you.
+- Other agents with `$HC_TERMINAL_ID` set: `hc run --bg -- python3 <skill-dir>/scripts/pr-wait <pr>... --until any-change`, then end your turn. Idling costs no model calls and you stay reachable. Its exit note wakes you and names its address: `hc read <t> --lines 100`, `hc rm <t>`, then follow the table below.
+- Anywhere else: one long-running command whose session you keep polling, or `--until any-change` rerun after each event. Stdout alone does not wake an idle Pi session, so keep the turn alive while waiting.
+- The watcher is the only polling: no hand-written sleep loops, cron jobs, or daemons.
 - Start it again after a push, after handling an exit 1, and after a resume.
 - An event that needs no action: wait again silently. Post nothing like "still waiting".
 
