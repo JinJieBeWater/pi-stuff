@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""pr-wait: watch one GitHub or Gitea pull request. Read-only.
+"""pr-wait: watch GitHub or Gitea pull requests. Read-only.
 
-  pr-wait <pr> [--repo owner/name] [--backend github|gitea] [--server URL]
+  pr-wait <pr>... [--repo owner/name] [--backend github|gitea] [--server URL]
           [--until ready|green|any-change] [--interval 60] [--once]
 
 <pr> is a PR number or PR URL. github.com URLs are GitHub; URLs under a tea login
@@ -16,6 +16,10 @@ Otherwise a number means GitHub, with the repo from --repo or the current checko
 
 --once reads one snapshot and exits instead of waiting. A met target is read
 twice, a few seconds apart, because checks register shortly after a push.
+
+Several PRs need --until any-change and no --once. The first PR to stop ends the
+whole watch with its exit code; every line names its repo and pr. Events from the
+other PRs are kept for the next run. Rerun without PRs that merged or closed.
 
 Exit codes
   0  target met, a new event (any-change), or merged
@@ -57,9 +61,11 @@ import hashlib
 import http.client
 import json
 import os
+import queue
 import re
 import subprocess
 import sys
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -180,13 +186,19 @@ class Snapshot:
     links: list[str] = field(default_factory=list)
 
 
+def write_line(line: Json) -> None:
+    # One write per line: print() writes the newline separately, so watchers on other threads could split it.
+    sys.stdout.write(json.dumps(line) + "\n")
+    sys.stdout.flush()
+
+
 def log(message: str) -> None:
     print(f"pr-wait: {message}", file=sys.stderr, flush=True)
 
 
 def fail(message: str) -> NoReturn:
     # Fatal messages go to stdout so a monitor shows the agent why it stopped.
-    print(json.dumps({"event": "error", "verdict": "error", "reason": message}), flush=True)
+    write_line({"event": "error", "verdict": "error", "reason": message})
     sys.exit(2)
 
 
@@ -659,6 +671,7 @@ def decide(snap: Snapshot, until: str) -> str:
 class Watcher:
     def __init__(self, target: Target, adapter: Any, until: str, interval: int, once: bool) -> None:
         self.target, self.adapter, self.until, self.interval, self.once = target, adapter, until, interval, once
+        self.name = f"{target.repo}#{target.pr}"
         self.path = STATE_DIR / f"{state_key(target)}.json"
         state = self.load()
         # First run for this PR: record what exists and report nothing.
@@ -685,7 +698,7 @@ class Watcher:
         tmp.replace(self.path)
 
     def say(self, event: str, **extra: Any) -> None:
-        print(json.dumps({"event": event, **self.fields, **extra}), flush=True)
+        write_line({"event": event, **self.fields, **extra})
 
     def finish(self, code: int, event: str) -> NoReturn:
         self.say(event)
@@ -749,15 +762,15 @@ class Watcher:
                 failures = 0
             except Transient as error:
                 failures += 1
-                log(f"poll failed ({failures}/{MAX_FAILED_POLLS}): {error}")
+                log(f"{self.name}: poll failed ({failures}/{MAX_FAILED_POLLS}): {error}")
                 if self.once or failures >= MAX_FAILED_POLLS:
-                    fail(f"gave up after {failures} failed reads: {error}")
+                    fail(f"{self.name}: gave up after {failures} failed reads: {error}")
                 time.sleep(min(max(self.interval * 2**failures, error.retry_after), MAX_BACKOFF_SECONDS))
                 continue
             except Fatal as error:
-                fail(str(error))
+                fail(f"{self.name}: {error}")
             except (KeyError, IndexError, TypeError, ValueError, AttributeError) as error:
-                fail(f"unexpected response from the server: {error!r}")
+                fail(f"{self.name}: unexpected response from the server: {error!r}")
             self.save()
             if self.baseline:
                 log(f"baseline recorded for {self.target.repo}#{self.target.pr}; reporting only new events")
@@ -845,8 +858,8 @@ def valid_repo(repo: str) -> str:
     return repo
 
 
-def parse_target(args: argparse.Namespace) -> Target:
-    raw = (args.pr or "").strip()
+def parse_target(args: argparse.Namespace, raw: str) -> Target:
+    raw = raw.strip()
     if not raw:
         fail("missing PR number. Did a variable expand to nothing? Usage: pr-wait <pr> [--repo owner/name]")
     server = normalize_root(args.server) if args.server else None
@@ -895,9 +908,35 @@ def parse_target(args: argparse.Namespace) -> Target:
     return Target(backend, server, valid_repo(repo), pr)
 
 
+def watch(args: argparse.Namespace, raw: str) -> NoReturn:
+    target = parse_target(args, raw)
+    _lock = lock(target)
+    adapter = GitHub(target) if target.backend == "github" else Gitea(target)
+    Watcher(target, adapter, args.until, max(args.interval, 5), args.once).run()
+
+
+def watch_all(args: argparse.Namespace) -> NoReturn:
+    """One watcher thread per PR. The first to stop ends the process."""
+    stopped: queue.SimpleQueue[int] = queue.SimpleQueue()
+
+    def run(raw: str) -> None:
+        try:
+            try:
+                watch(args, raw)
+            except Exception as error:  # A dead thread would leave its PR unwatched without a word.
+                fail(f"{raw}: {error!r}")
+        except SystemExit as stop:
+            stopped.put(stop.code)
+
+    for raw in args.pr:
+        threading.Thread(target=run, args=(raw,), daemon=True).start()
+    # os._exit: at normal shutdown a daemon thread still holding stdout's lock aborts Python.
+    os._exit(stopped.get())
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="pr-wait", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("pr", nargs="?", help="PR number or URL")
+    parser.add_argument("pr", nargs="*", help="PR number or URL; several need --until any-change")
     parser.add_argument("--repo", help="owner/name (default: from the URL or, on GitHub, the current checkout)")
     parser.add_argument("--backend", choices=("github", "gitea"))
     parser.add_argument("--server", help="instance root, with any subpath. Never authorizes sending a token")
@@ -905,10 +944,11 @@ def main() -> None:
     parser.add_argument("--interval", type=int, default=60, help="seconds between polls (default 60, min 5)")
     parser.add_argument("--once", action="store_true", help="read one snapshot and exit")
     args = parser.parse_args()
-    target = parse_target(args)
-    _lock = lock(target)
-    adapter = GitHub(target) if target.backend == "github" else Gitea(target)
-    Watcher(target, adapter, args.until, max(args.interval, 5), args.once).run()
+    if len(args.pr) < 2:
+        watch(args, args.pr[0] if args.pr else "")
+    if args.until != "any-change" or args.once:
+        fail("several PRs need --until any-change and no --once")
+    watch_all(args)
 
 
 if __name__ == "__main__":

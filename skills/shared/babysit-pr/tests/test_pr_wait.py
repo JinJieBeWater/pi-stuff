@@ -560,6 +560,45 @@ class Transport(GiteaBase):
         self.assertEqual(self.gitea("--once")[0], 2)
 
 
+class SeveralPrs(GiteaBase):
+    """Run the real script: stopping has to end the process while other watchers sleep."""
+
+    def setUp(self):
+        super().setUp()
+        for tail, reply in (("pulls/2", pr()), ("pulls/2/reviews", []), ("issues/2/comments", [])):
+            self.g.set(self.g.api(tail), reply)
+        self.prs = [f"{self.g.root}/{REPO}/pulls/{n}" for n in (1, 2)]
+
+    def script(self, *args):
+        env = {"HOME": os.environ["HOME"], "NO_PROXY": "*", "GITEA_URL": self.g.root, "GITEA_TOKEN": TOKEN}
+        done = subprocess.run([sys.executable, "-I", str(SCRIPT), *args], capture_output=True, text=True, env=env, timeout=30)
+        return done.returncode, [json.loads(line) for line in done.stdout.splitlines()]
+
+    def test_event_on_the_first_poll_after_a_restart_is_reported(self):
+        for url in self.prs:
+            self.assertEqual(self.script(url, "--once", "--until", "any-change")[0], 1)
+        self.g.set(self.g.api("issues/2/comments"), [{"id": 5, "user": {"login": "rev"}, "body": "x", "html_url": "http://g/c5"}])
+        code, lines = self.script(*self.prs, "--until", "any-change")
+        self.assertEqual(code, 0)
+        self.assertEqual([(line["event"], line["pr"]) for line in lines if line["event"] != "snapshot"], [("comment", 2)])
+
+    def test_merged_pr_stops_the_watch(self):
+        self.g.set(self.g.api("pulls/2"), pr(merged=True, state="closed"))
+        code, lines = self.script(*self.prs, "--until", "any-change")
+        self.assertEqual((code, lines[-1]["event"], lines[-1]["pr"]), (0, "merged", 2))
+
+    def test_failure_in_one_pr_stops_the_watch(self):
+        self.g.set(self.g.api("pulls/2"), 404)
+        code, lines = self.script(*self.prs, "--until", "any-change")
+        self.assertEqual((code, lines[-1]["event"]), (2, "error"))
+        self.assertIn(f"{REPO}#2", lines[-1]["reason"])
+
+    def test_several_prs_only_work_with_any_change(self):
+        for extra in ((), ("--until", "ready"), ("--until", "any-change", "--once")):
+            code, lines, _ = self.run_cli(*self.prs, *extra)
+            self.assertEqual((code, lines[-1]["event"]), (2, "error"), extra)
+
+
 class Input(Base):
     def assert_input_error(self, *args):
         code, lines, _ = self.run_cli(*args)
