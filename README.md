@@ -8,18 +8,19 @@
 
 ## 自写扩展
 
-| 扩展                                                    | 用途                                                   |
-| ------------------------------------------------------- | ------------------------------------------------------ |
-| [pi-lovely-mermaid](packages/pi-lovely-mermaid)         | 将 Mermaid 显示为跟随主题的终端字符图                  |
-| [pi-borderless-tables](packages/pi-borderless-tables)   | 无框对齐表格                                           |
-| [pi-herdr-session-move](packages/pi-herdr-session-move) | 把当前 Pi 对话转到另一个已有目录                       |
-| [pi-herdr-tab-title](packages/pi-herdr-tab-title)       | 在 Herdr Core/App 和旧 TUI 中同步 Pi 标签页名称        |
-| [pi-herdr-theme](packages/pi-herdr-theme)               | 让 Pi 配色跟着 Herdr App 主题走，含调色板              |
-| [pi-auto-session-title](packages/pi-auto-session-title) | 自动维护会话标题，支持用户语言、自定义提示词和模型回退 |
-| [pi-drop-session](packages/pi-drop-session)             | 新建会话后，将旧会话文件送到废纸篓                     |
-| [pi-context-policy](packages/pi-context-policy)         | 按环境选择提示词、托管扩展、工具和 Skill               |
-| [pi-tool-exposure](packages/pi-tool-exposure)           | 按配置调整工具暴露，使用原生 package discovery 找入口  |
-| [pi-skill-discovery](packages/pi-skill-discovery)       | 配置核心目录并按需查找其他 Skills                      |
+| 扩展                                                    | 用途                                                     |
+| ------------------------------------------------------- | -------------------------------------------------------- |
+| [pi-lovely-mermaid](packages/pi-lovely-mermaid)         | 将 Mermaid 显示为跟随主题的终端字符图                    |
+| [pi-borderless-tables](packages/pi-borderless-tables)   | 无框对齐表格                                             |
+| [pi-herdr-session-move](packages/pi-herdr-session-move) | 把当前 Pi 对话转到另一个已有目录                         |
+| [pi-herdr-tab-title](packages/pi-herdr-tab-title)       | 在 Herdr Core/App 和旧 TUI 中同步 Pi 标签页名称          |
+| [pi-herdr-theme](packages/pi-herdr-theme)               | 让 Pi 配色跟着 Herdr App 主题走，含调色板                |
+| [pi-auto-session-title](packages/pi-auto-session-title) | 自动维护会话标题，支持用户语言、自定义提示词和模型回退   |
+| [pi-drop-session](packages/pi-drop-session)             | 新建会话后，将旧会话文件送到废纸篓                       |
+| [pi-context-policy](packages/pi-context-policy)         | 按环境选择提示词、托管扩展、工具和 Skill                 |
+| [pi-tool-exposure](packages/pi-tool-exposure)           | 按配置调整工具暴露，使用原生 package discovery 找入口    |
+| [pi-skill-discovery](packages/pi-skill-discovery)       | 配置核心目录并按需查找其他 Skills                        |
+| [pi-tool-groups](packages/pi-tool-groups)               | 把连续的工具调用合并成一块，每次调用一行概览，点开看内容 |
 
 ## 定制 Skills
 

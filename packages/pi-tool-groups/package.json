@@ -1,0 +1,24 @@
+{
+  "name": "@jinjiebewater/pi-tool-groups",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Merge consecutive tool calls into one block in Pi, one overview line per call, opened by a click",
+  "keywords": [
+    "pi-package"
+  ],
+  "type": "module",
+  "scripts": {
+    "test": "vp test run --config ../../vite.config.ts --dir .",
+    "check-types": "vp exec tsc"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*"
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}

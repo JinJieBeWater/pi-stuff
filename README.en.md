@@ -8,18 +8,19 @@ My [Pi](https://github.com/earendil-works/pi) extensions, custom Skills, and per
 
 ## Extensions
 
-| Extension                                                            | Purpose                                                                             |
-| -------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| [pi-lovely-mermaid](packages/pi-lovely-mermaid/README.en.md)         | Render Mermaid as terminal text diagrams that follow the current theme              |
-| [pi-borderless-tables](packages/pi-borderless-tables/README.en.md)   | Display aligned tables without borders                                              |
-| [pi-herdr-session-move](packages/pi-herdr-session-move/README.en.md) | Move the current Pi conversation to another existing directory                      |
-| [pi-herdr-tab-title](packages/pi-herdr-tab-title/README.en.md)       | Sync Pi tab names in Herdr Core/App and the legacy TUI                              |
-| [pi-herdr-theme](packages/pi-herdr-theme/README.en.md)               | Make Pi follow the Herdr App theme, palette included                                |
-| [pi-auto-session-title](packages/pi-auto-session-title/README.en.md) | Maintain session titles with language selection, custom prompts, and model fallback |
-| [pi-drop-session](packages/pi-drop-session/README.en.md)             | Start a new session and send the previous session file to the trash                 |
-| [pi-context-policy](packages/pi-context-policy/README.en.md)         | Select prompts, managed extensions, tools, and Skills for the current environment   |
-| [pi-tool-exposure](packages/pi-tool-exposure/README.en.md)           | Adjust tool exposure and find entry points through native package discovery         |
-| [pi-skill-discovery](packages/pi-skill-discovery/README.en.md)       | Configure a core catalog and find other Skills on demand                            |
+| Extension                                                            | Purpose                                                                                    |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| [pi-lovely-mermaid](packages/pi-lovely-mermaid/README.en.md)         | Render Mermaid as terminal text diagrams that follow the current theme                     |
+| [pi-borderless-tables](packages/pi-borderless-tables/README.en.md)   | Display aligned tables without borders                                                     |
+| [pi-herdr-session-move](packages/pi-herdr-session-move/README.en.md) | Move the current Pi conversation to another existing directory                             |
+| [pi-herdr-tab-title](packages/pi-herdr-tab-title/README.en.md)       | Sync Pi tab names in Herdr Core/App and the legacy TUI                                     |
+| [pi-herdr-theme](packages/pi-herdr-theme/README.en.md)               | Make Pi follow the Herdr App theme, palette included                                       |
+| [pi-auto-session-title](packages/pi-auto-session-title/README.en.md) | Maintain session titles with language selection, custom prompts, and model fallback        |
+| [pi-drop-session](packages/pi-drop-session/README.en.md)             | Start a new session and send the previous session file to the trash                        |
+| [pi-context-policy](packages/pi-context-policy/README.en.md)         | Select prompts, managed extensions, tools, and Skills for the current environment          |
+| [pi-tool-exposure](packages/pi-tool-exposure/README.en.md)           | Adjust tool exposure and find entry points through native package discovery                |
+| [pi-skill-discovery](packages/pi-skill-discovery/README.en.md)       | Configure a core catalog and find other Skills on demand                                   |
+| [pi-tool-groups](packages/pi-tool-groups/README.en.md)               | Merge consecutive tool calls into one block, one overview line per call, opened by a click |
 
 ## Custom Skills
 

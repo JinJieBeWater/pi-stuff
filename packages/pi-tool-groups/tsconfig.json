@@ -1,0 +1,4 @@
+{
+  "extends": "@pi-stuff/config/tsconfig.base.json",
+  "include": ["*.ts", "test/**/*.ts"]
+}
