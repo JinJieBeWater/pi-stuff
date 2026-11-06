@@ -20,6 +20,7 @@
 | [pi-context-policy](packages/pi-context-policy)         | 按环境选择提示词、托管扩展、工具和 Skill               |
 | [pi-tool-exposure](packages/pi-tool-exposure)           | 按配置调整工具暴露，使用原生 package discovery 找入口  |
 | [pi-skill-discovery](packages/pi-skill-discovery)       | 配置核心目录并按需查找其他 Skills                      |
+| [pi-tool-groups](packages/pi-tool-groups)               | 把连续的同名工具调用合并成可折叠的一块                 |
 
 ## 定制 Skills
 

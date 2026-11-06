@@ -57,7 +57,8 @@
       "./packages/pi-drop-session/index.ts",
       "./packages/pi-context-policy/index.ts",
       "./packages/pi-tool-exposure/index.ts",
-      "./packages/pi-skill-discovery/index.ts"
+      "./packages/pi-skill-discovery/index.ts",
+      "./packages/pi-tool-groups/index.ts"
     ],
     "skills": [
       "./skills/pi/show-me"

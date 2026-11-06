@@ -20,6 +20,7 @@ My [Pi](https://github.com/earendil-works/pi) extensions, custom Skills, and per
 | [pi-context-policy](packages/pi-context-policy/README.en.md)         | Select prompts, managed extensions, tools, and Skills for the current environment   |
 | [pi-tool-exposure](packages/pi-tool-exposure/README.en.md)           | Adjust tool exposure and find entry points through native package discovery         |
 | [pi-skill-discovery](packages/pi-skill-discovery/README.en.md)       | Configure a core catalog and find other Skills on demand                            |
+| [pi-tool-groups](packages/pi-tool-groups/README.en.md)               | Merge consecutive same-name tool calls into one collapsible block                   |
 
 ## Custom Skills
 

@@ -108,6 +108,15 @@
         "@earendil-works/pi-coding-agent": "*",
       },
     },
+    "packages/pi-tool-groups": {
+      "name": "@jinjiebewater/pi-tool-groups",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@earendil-works/pi-ai": "*",
+        "@earendil-works/pi-coding-agent": "*",
+        "@earendil-works/pi-tui": "*",
+      },
+    },
   },
   "overrides": {
     "vite": "npm:@voidzero-dev/vite-plus-core@1.4.0",
@@ -196,6 +205,8 @@
     "@jinjiebewater/pi-skill-discovery": ["@jinjiebewater/pi-skill-discovery@workspace:packages/pi-skill-discovery"],
 
     "@jinjiebewater/pi-tool-exposure": ["@jinjiebewater/pi-tool-exposure@workspace:packages/pi-tool-exposure"],
+
+    "@jinjiebewater/pi-tool-groups": ["@jinjiebewater/pi-tool-groups@workspace:packages/pi-tool-groups"],
 
     "@jridgewell/resolve-uri": ["@jridgewell/resolve-uri@3.1.2", "", {}, "sha512-bRISgCIjP20/tbWSPWMEi54QVPRZExkuD9lJL+UIxUKtwVJA8wW1Trb1jMs1RFXo1CBTNZ/5hpC9QvmKWdopKw=="],
 
