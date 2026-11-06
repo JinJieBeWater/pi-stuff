@@ -49,7 +49,7 @@ function fixture(env: NodeJS.ProcessEnv = coreEnv, overrides: Dependencies = {})
           : args[0] === "ls"
             ? responses.world
             : {};
-    return { code: 0, killed: false, stdout: JSON.stringify(value), stderr: "" };
+    return { code: 0, killed: false, truncated: false, stdout: JSON.stringify(value), stderr: "" };
   };
   let exec = defaultExec;
   const pi = {
@@ -312,6 +312,7 @@ for (const failure of ["reject", "code", "killed", "json", "error"]) {
       return {
         code: failure === "code" ? 1 : 0,
         killed: failure === "killed",
+        truncated: false,
         stdout: failure === "json" ? "invalid" : '{"error":"not available"}',
         stderr: "",
       };
