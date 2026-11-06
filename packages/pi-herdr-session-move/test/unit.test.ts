@@ -94,6 +94,7 @@ function tuiRuntime(run: (args: string[]) => Promise<any>, caller = "w1:p1") {
       return {
         code: 0,
         killed: false,
+        truncated: false,
         stderr: "",
         stdout: JSON.stringify({ result: await run(args) }),
       };
