@@ -15,7 +15,13 @@ function host(respond: (args: string[]) => unknown, env = core) {
   const runtime = createRuntime(
     async (command, args) => {
       calls.push({ command, args });
-      return { code: 0, killed: false, stderr: "", stdout: JSON.stringify(respond(args)) };
+      return {
+        code: 0,
+        killed: false,
+        truncated: false,
+        stderr: "",
+        stdout: JSON.stringify(respond(args)),
+      };
     },
     "/target with spaces ; $",
     env,
@@ -92,10 +98,16 @@ test("Core launch creates an independent terminal, does not submit input and bin
 
 test("native command failures, malformed responses and cancelled operations stay failures", async () => {
   for (const result of [
-    { code: 1, killed: false, stderr: '{"error":{"message":"denied"}}', stdout: "" },
-    { code: 0, killed: true, stderr: "", stdout: "{}" },
-    { code: 0, killed: false, stderr: "", stdout: "not JSON" },
-    { code: 0, killed: false, stderr: "", stdout: "null" },
+    {
+      code: 1,
+      killed: false,
+      truncated: false,
+      stderr: '{"error":{"message":"denied"}}',
+      stdout: "",
+    },
+    { code: 0, killed: true, truncated: false, stderr: "", stdout: "{}" },
+    { code: 0, killed: false, truncated: false, stderr: "", stdout: "not JSON" },
+    { code: 0, killed: false, truncated: false, stderr: "", stdout: "null" },
   ]) {
     const runtime = createRuntime(async () => result, "/", core)!;
     await expect(runtime.current()).rejects.toThrow();

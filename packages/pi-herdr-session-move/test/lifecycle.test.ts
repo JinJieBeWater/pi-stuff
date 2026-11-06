@@ -118,6 +118,7 @@ async function receiverFixture(backend: "tui" | "core" = "tui") {
         pi.exec = async () => ({
           code: 0,
           killed: false,
+          truncated: false,
           stderr: "",
           stdout: JSON.stringify(
             backend === "core"
