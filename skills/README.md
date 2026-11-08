@@ -1,6 +1,18 @@
-# show-me
+# Skills
 
 [简体中文](README.md) | [English](README.en.md)
+
+`shared/` 存放可跨宿主使用的 skill，`pi/` 存放 Pi 适配；根 Pi manifest 仍只注册 Pi 版 show-me。本机通用入口和其他来源的共享 skill 见[跨 agent 配置](../config/shared/README.md)。
+
+| 通用 skill                                                                     | 用途                                            |
+| ------------------------------------------------------------------------------ | ----------------------------------------------- |
+| [audit-neighbor](shared/audit-neighbor/SKILL.md)                               | Herdr 旁路审计；仅显式调用，包含 Codex 调用策略 |
+| [babysit-pr](shared/babysit-pr/SKILL.md)                                       | 跟踪 GitHub/Gitea PR                            |
+| [diagnose-pi-internals](shared/diagnose-pi-internals/SKILL.md)                 | 从任意宿主排查 Pi 运行故障                      |
+| [pi-magpie-same-model-failover](shared/pi-magpie-same-model-failover/SKILL.md) | 配置与验证 Magpie 同型号后备                    |
+| [show-me](shared/show-me/SKILL.md)                                             | 可视化解释；共享版仅显式调用                    |
+
+## show-me
 
 统一选择代码草图、精确表格、日常关系图、基础数据图、产品设计材料、专业图和交互 HTML。保留用户指定的工具或格式，修改已有规格时沿用原工具。
 

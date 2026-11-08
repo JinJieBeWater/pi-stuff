@@ -6,6 +6,8 @@ Checked on 2026-11-01. This archive holds personal configuration from my current
 
 `pi/` maps to the Pi user directory, `~/.pi/agent/` by default; `rpiv-todo/` maps to `~/.config/rpiv-todo/`. Home paths use `~/`. Device IDs, the last-read changelog version, audio setup state, and authentication are excluded.
 
+2026-11-09: Common rules now live in [shared/AGENTS.md](shared/AGENTS.md); Pi instructions retain host differences. See the [cross-agent setup](shared/README.md) (Chinese) for discovery, symlinks, and recovery. These instruction files are the live local symlink targets; other configuration remains a snapshot from the original check date.
+
 All 31 configuration files and custom resources were checked against the local installation. They match apart from the normalization above and document formatting. There are 38 configured packages and 36 extension entry points enabled by native automatic discovery. Tool adapters load four more entry points, and `pi-herdr` loads only under legacy TUI conditions. See the [personal setup](../docs/personal-setup.en.md) for sources, filters, and managed loading. Entry counts include package changelogs and two locally generated hooks, and exclude host built-in extensions.
 
 ## Contents

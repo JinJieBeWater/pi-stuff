@@ -1,24 +1,7 @@
-## 沟通与表达
+始终读取并遵循 `~/.agents/AGENTS.md`。
 
-- 默认中文；每轮选择最简洁有效的表达形式。面向用户默认直接在对话中回答；agent 间交接已有长正文文件时，只回简要结论和路径。
-- 解释机制或比较方案时，主动使用 show-me；上下文里没有全文就先读 `~/.pi/agent/skills/show-me/SKILL.md`。
-
-## 实施与权限
-
-- 讨论只读；实施按确认范围。删库、重置数据或删除用途不明的内容前先确认。
-- 第三方工具和上游 skill 优先原生配置与操作，保留官方文件；修改其源码或流程、创建 fork、提交上游 PR 须明确授权。
-- 确认无真实用户时，直接替换旧实现并更新调用方，不做兼容、迁移或保留备用旧实现。
-
-## 工具与环境
-
-- JavaScript 包命令默认 `bunx`，用户要求或兼容问题除外。
-- 通用 skill 放 `~/.agents/skills`，Pi 专属放 `~/.pi/agent/skills`，项目私有随项目；镜像用软链。
-- GUI 自动化避免干扰用户当前桌面。
-- 遇到耗时构建、批量测试或批处理任务，主动提醒我可以交给 `kvm` 执行。
-
-## 审查与收尾
-
-- 审查默认 `ponytail-review`，规范验收用 `code-review`；仅明确要求多 agent 独立复核时，读取并遵循 `~/.pi/agent/skills/multi-agent-review/SKILL.md`。每次一套，子 agent 遵循分配视角。
-- 验证取最小充分集并复用有效结果；交付说明删除项、未运行检查。
-- 验证通过后自动按照 Conventional Commits 提交改动；补修本任务的 HEAD 且确认未推送时 amend。
-- 任务结束时主动清理本任务创建的临时资源，包括辅助分支、worktree、子 agent、后台进程和临时文件。
+- 在 Pi 中以 `~/.pi/agent/skills/show-me/SKILL.md` 代替通用 show-me。
+- grill 等访谈提问一律用 ask：同轮 frontier 合为一次调用，每题一个 prompt，首个 choice 是推荐项并标「（建议）」，理由写进它的 description；此格式优先于 skill 自带的问答格式。
+- 子 agent 按任务分两类：改代码、文档和评审在本机用 Claude Opus profile（`general`、`reviewer-opus-high`）；只能在 KVM 做的 Linux 构建、门禁、实跑和读图才开到 KVM，用 `kvm-sol`（`machine` 填 `agents list` 返回的 ID）。KVM 跑不了 Claude 模型。一次性 KVM 命令用 `hc run --on kvm`。
+- 本机环境补充规则：若 `~/.pi/agent/local-environment.md` 存在，读取并遵循；该文件不入库。
+- 仅明确要求多 agent 独立复核时，读取并遵循 `~/.pi/agent/skills/multi-agent-review/SKILL.md`。

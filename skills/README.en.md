@@ -1,6 +1,18 @@
-# show-me
+# Skills
 
 [简体中文](README.md) | [English](README.en.md)
+
+`shared/` holds skills usable across hosts; `pi/` holds Pi adaptations. The root Pi manifest still registers only Pi show-me. See the [cross-agent setup](../config/shared/README.md) (Chinese) for local entry points and shared skills from other sources.
+
+| Shared skill                                                                   | Job                                                                   |
+| ------------------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| [audit-neighbor](shared/audit-neighbor/SKILL.md)                               | Herdr session audit; explicit invocation only, including Codex policy |
+| [babysit-pr](shared/babysit-pr/SKILL.md)                                       | Monitor GitHub/Gitea PRs                                              |
+| [diagnose-pi-internals](shared/diagnose-pi-internals/SKILL.md)                 | Diagnose Pi runtime faults from any host                              |
+| [pi-magpie-same-model-failover](shared/pi-magpie-same-model-failover/SKILL.md) | Configure and verify Magpie fallback within the selected model        |
+| [show-me](shared/show-me/SKILL.md)                                             | Visual explanations; shared version requires explicit invocation      |
+
+## show-me
 
 Choose between code sketches, exact tables, everyday relationship diagrams, basic data charts, product design materials, specialized figures, and interactive HTML. Keep the user's chosen tool or format, and use the original tool when editing an existing specification.
 
