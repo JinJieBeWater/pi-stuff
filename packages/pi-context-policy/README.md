@@ -14,8 +14,8 @@
 
 | 环境         | 条件                                          | 操作说明                                                                                                                                                             |
 | ------------ | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Herdr Core   | `HC_TERMINAL_ID`、`HC_TERMINAL_SOCKET` 都非空 | 父子 agent 协作用 `agents` 工具（Shepherdr），同级 agent 协作用 hc；使用 hc 前先读 `hc --skill`；查询布局或操作窗口前先确认 `herdr-app` 可用并读 `herdr-app --skill` |
-| 旧 Herdr TUI | `HERDR_ENV=1` 且 `HERDR_PANE_ID` 非空         | agent 协作使用 `agents` 工具（Shepherdr）；终端或布局操作先读 `herdr --skill`                                                                                        |
+| Herdr Core   | `HC_TERMINAL_ID`、`HC_TERMINAL_SOCKET` 都非空 | 同级 agent 协作用 hc，使用前先读 `hc --skill`（父子协作规则由 Shepherdr 自带）；查询布局或操作窗口前先确认 `herdr-app` 可用并读 `herdr-app --skill` |
+| 旧 Herdr TUI | `HERDR_ENV=1` 且 `HERDR_PANE_ID` 非空         | 终端或布局操作先读 `herdr --skill`（此环境不加载 Shepherdr）                                                                                        |
 
 Core 终端可能继承旧 `HERDR_*` 标记，因此两套条件都满足时只注入 Core 段落。其他环境不添加内容。环境标记说明终端由哪个后端管理，不能证明存在可用的桌面窗口。
 
