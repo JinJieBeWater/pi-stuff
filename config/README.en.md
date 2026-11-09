@@ -22,7 +22,7 @@ All 31 configuration files and custom resources were checked against the local i
 | [multi-agent-review/](pi/skills/multi-agent-review/)                                                                                                          | Manual multi-agent review Skill and upstream source             |
 | [rpiv-todo/config.json](rpiv-todo/config.json)                                                                                                                | Task tracking guidance, without task data                       |
 
-The remaining files store keybindings, the theme, interaction settings, Ponytail, helper models, web fetching, permissions, and a worktree template. Disabled accent-color and MCP configuration, unused model-router configuration, the unmodified voice template, and `/drop` settings equal to the defaults are omitted. `session.titleGeneration` retains only its disabled flag; the extension in this repository generates titles.
+The remaining files store keybindings, the theme, interaction settings, helper models, web fetching, permissions, and a worktree template. Disabled accent-color and MCP configuration, unused model-router configuration, the unmodified voice template, and `/drop` settings equal to the defaults are omitted. `session.titleGeneration` retains only its disabled flag; the extension in this repository generates titles.
 
 Native Codemode is enabled and PCC uses `normal`; they operate at different layers.
 

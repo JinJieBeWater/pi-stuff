@@ -22,7 +22,7 @@
 | [multi-agent-review/](pi/skills/multi-agent-review/)                                                                                                          | 手动多 agent 审查 Skill 及上游原文      |
 | [rpiv-todo/config.json](rpiv-todo/config.json)                                                                                                                | 任务追踪指引，不含任务数据              |
 
-其余文件保存快捷键、主题、交互、Ponytail、辅助模型、网页抓取、权限和工作树模板。停用的 accent-color、MCP、未加载的 model-router 配置、未定制的语音模板和等于默认值的 `/drop` 配置不保留。`session.titleGeneration` 只保留停用标记，自动标题由本仓库扩展负责。
+其余文件保存快捷键、主题、交互、辅助模型、网页抓取、权限和工作树模板。停用的 accent-color、MCP、未加载的 model-router 配置、未定制的语音模板和等于默认值的 `/drop` 配置不保留。`session.titleGeneration` 只保留停用标记，自动标题由本仓库扩展负责。
 
 原生 Codemode 开启，PCC 使用 `normal`；两者负责不同层。
 
