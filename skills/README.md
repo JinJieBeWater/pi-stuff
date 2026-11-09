@@ -9,6 +9,7 @@
 | [audit-neighbor](shared/audit-neighbor/SKILL.md)                               | Herdr 旁路审计；仅显式调用，包含 Codex 调用策略 |
 | [babysit-pr](shared/babysit-pr/SKILL.md)                                       | 跟踪 GitHub/Gitea PR                            |
 | [diagnose-pi-internals](shared/diagnose-pi-internals/SKILL.md)                 | 从任意宿主排查 Pi 运行故障                      |
+| [herdr-session-recovery](shared/herdr-session-recovery/SKILL.md)               | 重启后恢复 Herdr Core 原会话、关系与关注状态    |
 | [pi-magpie-same-model-failover](shared/pi-magpie-same-model-failover/SKILL.md) | 配置与验证 Magpie 同型号后备                    |
 | [show-me](shared/show-me/SKILL.md)                                             | 可视化解释；共享版仅显式调用                    |
 
