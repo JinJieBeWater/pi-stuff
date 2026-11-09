@@ -8,12 +8,12 @@
       "restoreOnResume": false
     }
   },
-  "collapseChangelog": false,
+  "collapseChangelog": true,
   "compaction": {
     "enabled": true
   },
-  "defaultModel": "codex/gpt-6.1-sol",
-  "defaultProvider": "magpie",
+  "defaultModel": "claude/claude-opus-5-5",
+  "defaultProvider": "claude-other",
   "defaultThinkingLevel": "high",
   "modelThinkingLevels": {
     "openai-codex/gpt-6.1-sol": "high"
@@ -60,7 +60,6 @@
     "npm:@howaboua/pi-smart-btw",
     "npm:@howaboua/pi-skill-adversarial-qa",
     "npm:@howaboua/pi-skill-agents-md",
-    "npm:@howaboua/pi-skill-anti-ai-copy",
     "npm:@howaboua/pi-skill-skill-creator",
     {
       "source": "git:github.com/DietrichGebert/ponytail",
@@ -78,12 +77,15 @@
       "extensions": []
     },
     "../../my/tools/pi-evals",
-    "npm:@howaboua/pi-browser",
+    {
+      "source": "../../my/personal/fork/howaboua-pi-stuff/packages/pi-browser",
+      "extensions": []
+    },
     "npm:@howaboua/pi-skill-harness-and-agent-engineering",
-    "npm:@howaboua/pi-agent-board",
+    "../../my/personal/fork/howaboua-pi-stuff/packages/pi-agent-board",
     "../../my/pi-stuff/packages/pi-lovely-mermaid",
-    "npm:@howaboua/pi-notes-compaction",
-    "npm:@howaboua/pi-unicode-charts@0.1.3",
+    "../../my/personal/fork/howaboua-pi-stuff/packages/pi-notes-compaction",
+    "npm:@howaboua/pi-unicode-charts",
     "../../my/pi-stuff/packages/pi-borderless-tables",
     "../../my/pi-stuff/packages/pi-herdr-session-move",
     "../../my/pi-stuff/packages/pi-herdr-tab-title",
@@ -91,8 +93,15 @@
     "../../my/pi-stuff/packages/pi-drop-session",
     "../../my/pi-stuff/packages/pi-context-policy",
     "../../my/pi-stuff/packages/pi-tool-exposure",
-    "git:github.com/stnly/pi-grok",
-    "../../my/personal/fork/howaboua-pi-stuff/packages/pi-shepherdr"
+    {
+      "source": "git:github.com/stnly/pi-grok",
+      "extensions": []
+    },
+    {
+      "source": "../../my/personal/fork/howaboua-pi-stuff/packages/pi-shepherdr",
+      "extensions": []
+    },
+    "npm:agents-cron"
   ],
   "quietStartup": true,
   "retry": {
@@ -133,5 +142,6 @@
     "-~/.agents/skills/show-me",
     "-~/.agents/skills/herdr",
     "-~/.agents/skills/herdr-gpui-browser"
-  ]
+  ],
+  "defaultProjectTrust": "never"
 }

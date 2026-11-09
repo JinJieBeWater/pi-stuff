@@ -6,7 +6,7 @@
 
 `pi/` 对应 Pi 用户目录，默认是 `~/.pi/agent/`；`rpiv-todo/` 对应 `~/.config/rpiv-todo/`。主目录路径统一为 `~/`，设备 ID、已读版本、音频初始化状态和认证不入库。
 
-2026-11-09：Pi 使用独立的全局指令 [pi/AGENTS.md](pi/AGENTS.md)，不读取 [shared/AGENTS.md](shared/AGENTS.md)（后者供 Codex、Claude 使用，见[跨 agent 配置](shared/README.md)）。`pi/` 下的 AGENTS.md、pi-skill-discovery/tool-exposure/context-policy 三个 JSON、`shepherdr/profiles/` 和 `skills/multi-agent-review/` 是本机软链的源文件，直接修改即生效；其余配置仍是下述日期的快照。
+2026-11-09：Pi 使用独立的全局指令 [pi/AGENTS.md](pi/AGENTS.md)，不读取 [shared/AGENTS.md](shared/AGENTS.md)（后者供 Codex、Claude 使用，见[跨 agent 配置](shared/README.md)）。`pi/` 下的 AGENTS.md、pi-skill-discovery/tool-exposure/context-policy 三个 JSON、`shepherdr/profiles/` 和 `skills/multi-agent-review/` 是本机软链的源文件，直接修改即生效；其余配置是快照，2026-11-09 已按本机刷新（下文包数和入口数未重新核对）。
 
 本次逐项复核 31 份配置与自定义资源；除上述归一化和文档格式外，与本机一致。当前有 38 个配置包、36 个原生自动发现启用的扩展入口，工具适配另行加载 4 个入口，`pi-herdr` 仅在旧 TUI 条件下加载。来源、过滤及托管方式见[个人清单](../docs/personal-setup.md)。入口计数包含包内 changelog 及两个本机自动生成的 hook，不含宿主内置扩展。
 

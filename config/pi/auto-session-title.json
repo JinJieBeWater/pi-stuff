@@ -1,8 +1,8 @@
 {
   "models": [
     {
-      "provider": "opencode-go",
-      "model": "deepseek-v4.1-flash",
+      "provider": "openai-codex",
+      "model": "gpt-6-luna",
       "thinkingLevel": "off"
     }
   ]

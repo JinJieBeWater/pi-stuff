@@ -1,7 +1,7 @@
 {
   "scope": {
     "allProviders": "off",
-    "additionalProviders": ["magpie-opus-responses", "magpie", "magpie-opus-yisihete16"]
+    "additionalProviders": ["magpie"]
   },
   "tools": {
     "viewImageFallback": true,
