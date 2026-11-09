@@ -7,6 +7,13 @@
         "HERDR_PANE_ID": true,
         "HC_TERMINAL_SOCKET": false
       }
+    },
+    {
+      "source": "../../my/personal/fork/howaboua-pi-stuff/packages/pi-shepherdr",
+      "whenEnv": {
+        "HC_TERMINAL_ID": true,
+        "HC_TERMINAL_SOCKET": true
+      }
     }
   ]
 }

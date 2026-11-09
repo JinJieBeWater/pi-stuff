@@ -1,0 +1,9 @@
+{
+  "description": "仅用于 machine=kvm：速度与成本优先的分析、实现和验证（OpenCode Go DeepSeek）",
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "thinking": "high",
+  "prompt": "../general/prompt.md",
+  "share_context": false,
+  "accepts": [],
+  "pi_args": []
+}

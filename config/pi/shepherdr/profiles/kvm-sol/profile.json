@@ -1,0 +1,8 @@
+{
+  "description": "仅用于 machine=kvm：执行授权任务并验证交付（Codex GPT-6.1 Sol）；修改限于任务范围，只读任务保持只读",
+  "model": "openai-codex/gpt-6.1-sol",
+  "thinking": "high",
+  "prompt": "../general/prompt.md",
+  "accepts": [],
+  "pi_args": []
+}

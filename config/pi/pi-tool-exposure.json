@@ -3,7 +3,7 @@
     {
       "source": "npm:@juicesharp/rpiv-todo",
       "tools": {
-        "todo": "direct"
+        "todo": "deferred"
       }
     },
     {
@@ -25,6 +25,18 @@
       "source": "npm:@howaboua/pi-codex-imagegen",
       "tools": {
         "imagegen": "deferred"
+      }
+    },
+    {
+      "source": "git:github.com/stnly/pi-grok",
+      "tools": {
+        "x_search": "deferred"
+      }
+    },
+    {
+      "source": "../../my/personal/fork/howaboua-pi-stuff/packages/pi-browser",
+      "tools": {
+        "browser": "deferred"
       }
     }
   ]

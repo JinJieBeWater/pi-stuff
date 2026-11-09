@@ -1,17 +1,16 @@
 # 跨 agent 的个人配置
 
-通用指令源是本目录的 [AGENTS.md](AGENTS.md)，本机 `~/.agents/AGENTS.md` 软链到它；Pi 的[专属指令](../pi/AGENTS.md)读取通用指令后补充宿主差异。修改源文件即可更新本机入口。
+通用指令源是本目录的 [AGENTS.md](AGENTS.md)，本机 `~/.agents/AGENTS.md` 软链到它，Codex 和 Claude 的全局文件显式读取。Pi 使用独立的[全局指令](../pi/AGENTS.md)，不读取本文件；两份各自维护。
 
 ```text
-~/AGENTS.md ──────────────────┐
-~/.codex/AGENTS.md ──读取─────┤
-~/.claude/CLAUDE.md ─读取─────┼─→ ~/.agents/AGENTS.md → config/shared/AGENTS.md
-~/.pi/agent/AGENTS.md ─读取───┘                       + Pi 专属规则
+~/.codex/AGENTS.md ──读取──┐
+~/.claude/CLAUDE.md ─读取──┴─→ ~/.agents/AGENTS.md → config/shared/AGENTS.md
+~/.pi/agent/AGENTS.md → config/pi/AGENTS.md（独立）
 
 ~/.agents/skills/<name>/ → 原 skill 目录（含 references、scripts 等）
 ```
 
-`AGENTS.md` 是工作目录指令约定，不保证每种宿主都自动读取 `~/.agents/AGENTS.md`。这里用两种入口：支持全局指令的宿主显式读取它；沿祖先目录搜索的宿主可发现 `~/AGENTS.md`。项目在主目录外，或宿主只从 Git 根开始搜索时，在其全局指令或项目 AGENTS.md 中加入：
+宿主不一定自动读取 `~/.agents/AGENTS.md`。需要时在其全局指令或项目 AGENTS.md 中加入：
 
 ```markdown
 始终读取并遵循 `~/.agents/AGENTS.md`。
@@ -21,7 +20,7 @@ SKILL.md 的格式与自动发现目录也分开处理：共享目录提供标�
 
 ## 本机整理与边界
 
-- 通用沟通、权限、agent 文本写作、验证、提交和清理规则合并到共享源。Pi 文件保留 ask、Shepherdr profiles、Pi 可视化和手动多 agent 审查适配；本机项目环境约定保存在不入库的 `~/.pi/agent/local-environment.md`，Pi 入口按存在情况读取。
+- 通用沟通、权限、agent 文本写作、验证、提交和清理规则在共享源。Pi 版以它为底，并入 ask、Shepherdr profiles、手动多 agent 审查和本机环境规则，去掉与 Pi 的 skill_search、ponytail 重复的条目；修改共享规则时按需同步 Pi 版。本机项目环境约定保存在不入库的 `~/.pi/agent/local-environment.md`。
 - Codex 和 Claude 的全局文件原先已读取共享源，保留各自额外规则。
 - 本次从 Pi 安装来源暴露的通用 skill、依赖和未导出原因见[审计清单](../../docs/pi-shared-skills-audit-2026-11-09.md)。上游目录原样保留，整个目录软链，不复制 SKILL.md。
 - 含本机网络地址的 `configure-kvm-moshi-via-tailscale` 实体保留在 `~/.agents/skills`，由 Pi/Codex/Claude 软链使用；它和本机环境补充规则均不进入公开仓库，换机器时私下恢复。
@@ -34,8 +33,6 @@ SKILL.md 的格式与自动发现目录也分开处理：共享目录提供标�
 
 ```sh
 ln -s ~/my/pi-stuff/config/shared/AGENTS.md ~/.agents/AGENTS.md
-ln -s ~/my/pi-stuff/config/pi/AGENTS.md ~/.pi/agent/AGENTS.md
-ln -s .agents/AGENTS.md ~/AGENTS.md
 ```
 
 各 skill 的源路径见审计清单；目录软链例如：

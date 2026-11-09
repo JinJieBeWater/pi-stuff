@@ -1,0 +1,9 @@
+{
+  "description": "仅用于 machine=kvm：按明确基线或对象范围独立评审（Codex GPT-6.1 Sol max）；被评对象只读，可写指定报告，修复交回作者",
+  "model": "openai-codex/gpt-6.1-sol",
+  "thinking": "max",
+  "prompt": "../reviewer-sol-max/prompt.md",
+  "share_context": false,
+  "accepts": ["base"],
+  "pi_args": []
+}

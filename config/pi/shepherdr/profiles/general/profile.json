@@ -1,8 +1,8 @@
 {
-  "description": "执行授权任务并验证交付；修改限于任务范围，只读任务保持只读，可写指定报告",
-  "model": "magpie-opus-responses/claude/claude-opus-5-5",
-  "thinking": "high",
-  "prompt": "prompt.md",
-  "accepts": [],
-  "pi_args": []
+	"description": "执行授权任务并验证交付；修改限于任务范围，只读任务保持只读，可写指定报告",
+	"model": "claude/claude-opus-5-5",
+	"thinking": "high",
+	"prompt": "prompt.md",
+	"accepts": [],
+	"pi_args": []
 }
